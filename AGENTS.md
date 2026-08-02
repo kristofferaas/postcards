@@ -1,3 +1,13 @@
+## Breaking changes are encouraged
+
+This project is very early stage, breaking things are encouraged and adviced.
+No need for fallbacks, migrations and backward compatability.
+The database can freely be cleaned and seeded as many times as needed.
+
+## Mobile app
+
+This is an iOS and Android app, not web. Test using an iOS simulator and computer use.
+
 <!-- effect-solutions:start -->
 ## Effect Best Practices
 
@@ -17,7 +27,3 @@ Never guess at Effect patterns - check the guide first.
 The Effect v4 repository is cloned to `~/.local/share/effect-solutions/effect`
 for reference. Use it to explore APIs, find usage examples, and understand
 implementation details when the documentation is not enough.
-
-## apps/mobile
-
-This is an iOS and android app using React Native and Expo.

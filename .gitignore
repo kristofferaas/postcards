@@ -15,7 +15,6 @@ coverage
 # Expo
 .expo
 .expo-shared
-apps/mobile/web-build
 apps/mobile/android
 apps/mobile/ios
 

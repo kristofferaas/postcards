@@ -6,11 +6,9 @@ export const createPostcards = Effect.gen(function*() {
 
   yield* sql`
     CREATE TABLE postcards (
-      "to" TEXT NOT NULL,
-      "from" TEXT NOT NULL,
       sent_at TEXT,
       opened_at TEXT,
-      content TEXT NOT NULL
+      front_image TEXT NOT NULL
     )
   `
 })

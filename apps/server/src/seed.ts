@@ -31,65 +31,30 @@ const seed = Effect.gen(function*() {
 
       yield* database.sql`
         INSERT INTO postcards (
-          "to",
-          "from",
           sent_at,
           opened_at,
-          content,
-          caption,
-          caption_style,
-          accent_color,
-          stamp,
-          stickers
+          front_image
         )
         VALUES
           (
-            ${"Maya"},
-            ${"Jonas"},
             ${"2026-07-18T09:15:00.000Z"},
             ${"2026-07-18T11:42:00.000Z"},
-            ${"The midnight sun is still glowing over the harbor. Wish you were here!"},
-            ${"MIDNIGHT SUN"},
-            ${"bold"},
-            ${"#ff6b4a"},
-            ${"🌊"},
-            ${JSON.stringify(["✨", "☀️"])}
+            ${"fjord"}
           ),
           (
-            ${"Noah"},
-            ${"Sofia"},
             ${"2026-07-21T14:30:00.000Z"},
             ${null},
-            ${"Found a tiny bookshop tucked between two cafés. I saved you a postcard from it."},
-            ${"wish you were here"},
-            ${"script"},
-            ${"#7157d9"},
-            ${"✈️"},
-            ${JSON.stringify(["📚"])}
+            ${"fjord"}
           ),
           (
-            ${"Liv"},
-            ${"Erik"},
             ${"2026-07-24T07:05:00.000Z"},
             ${"2026-07-25T16:20:00.000Z"},
-            ${"Greetings from the fjords — cold water, warm waffles, and an unforgettable view."},
-            ${"NORWAY, WITH LOVE"},
-            ${"classic"},
-            ${"#0b7a75"},
-            ${"🏔️"},
-            ${JSON.stringify(["💙", "🌿"])}
+            ${"fjord"}
           ),
           (
-            ${"Aksel"},
-            ${"Nora"},
             ${null},
             ${null},
-            ${"A little note for your next adventure. This one is still waiting to be sent."},
-            ${"Next adventure →"},
-            ${"bold"},
-            ${"#d94b35"},
-            ${"🍒"},
-            ${JSON.stringify(["🧡"])}
+            ${"fjord"}
           )
       `
     })

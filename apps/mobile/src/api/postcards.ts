@@ -2,17 +2,9 @@ import { Platform } from 'react-native';
 
 export type Postcard = {
   readonly id: number;
-  readonly to: string;
-  readonly from: string;
   readonly sentAt: string | null;
   readonly openedAt: string | null;
-  readonly content: string;
   readonly frontImage: string;
-  readonly caption: string;
-  readonly captionStyle: string;
-  readonly accentColor: string;
-  readonly stamp: string;
-  readonly stickers: readonly string[];
 };
 
 export type CreatePostcardInput = Omit<Postcard, 'id' | 'sentAt' | 'openedAt'>;
@@ -33,18 +25,9 @@ const isPostcard = (value: unknown): value is Postcard => {
 
   return (
     typeof postcard.id === 'number' &&
-    typeof postcard.to === 'string' &&
-    typeof postcard.from === 'string' &&
     isNullableString(postcard.sentAt) &&
     isNullableString(postcard.openedAt) &&
-    typeof postcard.content === 'string' &&
-    typeof postcard.frontImage === 'string' &&
-    typeof postcard.caption === 'string' &&
-    typeof postcard.captionStyle === 'string' &&
-    typeof postcard.accentColor === 'string' &&
-    typeof postcard.stamp === 'string' &&
-    Array.isArray(postcard.stickers) &&
-    postcard.stickers.every((sticker) => typeof sticker === 'string')
+    typeof postcard.frontImage === 'string'
   );
 };
 
