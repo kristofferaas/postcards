@@ -3,5 +3,6 @@ packages:
   - packages/*
 
 onlyBuiltDependencies:
+  - "@shopify/react-native-skia"
   - sharp
   - unrs-resolver
