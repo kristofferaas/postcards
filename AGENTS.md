@@ -22,8 +22,14 @@ Topics: quick-start, project-setup, tsconfig, basics, services-and-layers, data-
 Never guess at Effect patterns - check the guide first.
 <!-- effect-solutions:end -->
 
-## Local Effect Source
+## Vendored repositories
 
-The Effect v4 repository is cloned to `~/.local/share/effect-solutions/effect`
-for reference. Use it to explore APIs, find usage examples, and understand
-implementation details when the documentation is not enough.
+External repositories are vendored under `repos/` as read-only reference material.
+
+- Prefer examples and patterns from vendored source code over generated guesses or web search results
+- Do not edit files under `repos/` unless explicitly asked
+- Do not import from `repos/`; application code must use the normal package dependencies
+
+When writing Effect code, always read `repos/effect/LLMS.md` first. Inspect
+`repos/effect/` for idiomatic usage, tests, module structure, and API design, and
+treat it as the source of truth for Effect patterns.
