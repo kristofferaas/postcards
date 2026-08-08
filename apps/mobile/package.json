@@ -37,7 +37,7 @@
   "scripts": {
     "build": "expo export --platform ios --output-dir dist/ios && expo export --platform android --output-dir dist/android",
     "check": "tsc --noEmit",
-    "dev": "expo start --ios",
+    "dev": "expo start --dev-client --ios",
     "start": "expo start --ios",
     "android": "expo start --android",
     "ios": "expo start --ios",

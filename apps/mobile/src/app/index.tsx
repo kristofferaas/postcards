@@ -1,4 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -6,7 +7,6 @@ import {
   StyleSheet,
   useWindowDimensions,
   View,
-  type LayoutChangeEvent,
   type ListRenderItemInfo,
 } from 'react-native';
 import Animated, {
@@ -14,28 +14,30 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { apiUrl, getPostcards, type Postcard } from '@/api/postcards';
 import { PostcardListCard } from '@/components/postcard-list-card';
 import { POSTCARD_ASPECT_RATIO } from '@/components/skia-postcard';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const MAX_CARD_WIDTH = 560;
 const DECK_STRIDE_RATIO = 0.72;
+const CREATE_BUTTON_HEIGHT = 56;
 
 export default function HomeScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { height: viewportHeight, width: viewportWidth } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
   const scrollY = useSharedValue(0);
   const [postcards, setPostcards] = useState<readonly Postcard[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [headerHeight, setHeaderHeight] = useState(0);
 
   const cardWidth = Math.min(
     MAX_CARD_WIDTH,
@@ -76,10 +78,6 @@ export default function HomeScreen() {
     },
   });
 
-  const measureHeader = useCallback((event: LayoutChangeEvent) => {
-    setHeaderHeight(event.nativeEvent.layout.height);
-  }, []);
-
   const renderPostcard = useCallback(
     ({ index, item }: ListRenderItemInfo<Postcard>) => (
       <PostcardListCard
@@ -87,7 +85,7 @@ export default function HomeScreen() {
         cardWidth={cardWidth}
         index={index}
         isLast={index === postcards.length - 1}
-        itemOffset={headerHeight + index * stride}
+        itemOffset={index * stride}
         postcard={item}
         reducedMotion={reducedMotion}
         scrollY={scrollY}
@@ -98,68 +96,12 @@ export default function HomeScreen() {
     [
       cardHeight,
       cardWidth,
-      headerHeight,
       postcards.length,
       reducedMotion,
       scrollY,
       stride,
       viewportHeight,
     ],
-  );
-
-  const header = (
-    <View onLayout={measureHeader} style={styles.headerShell}>
-      <View style={styles.header}>
-        <View style={styles.brandRow}>
-          <View style={styles.mark}>
-            <ThemedText style={styles.markText}>P</ThemedText>
-          </View>
-          <ThemedText type="smallBold">POST CARDS</ThemedText>
-        </View>
-
-        <View style={styles.titleRow}>
-          <View style={styles.titleCopy}>
-            <ThemedText style={styles.title} type="title">
-              Your postcard stack.
-            </ThemedText>
-            <ThemedText style={styles.subtitle} themeColor="textSecondary">
-              Scroll through the collection.
-            </ThemedText>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/explore')}
-            style={({ pressed }) => [
-              styles.createButton,
-              pressed && styles.pressed,
-            ]}>
-            <ThemedText style={styles.createButtonText} type="smallBold">
-              + Create
-            </ThemedText>
-          </Pressable>
-        </View>
-
-        {error && postcards.length > 0 ? (
-          <ThemedView style={styles.inlineError} type="backgroundElement">
-            <View style={styles.inlineErrorCopy}>
-              <ThemedText type="smallBold">Couldn’t refresh the stack</ThemedText>
-              <ThemedText numberOfLines={2} type="small" themeColor="textSecondary">
-                {error}
-              </ThemedText>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void loadPostcards()}
-              style={({ pressed }) => [
-                styles.inlineRetry,
-                pressed && styles.pressed,
-              ]}>
-              <ThemedText type="smallBold">Retry</ThemedText>
-            </Pressable>
-          </ThemedView>
-        ) : null}
-      </View>
-    </View>
   );
 
   const emptyState = loading ? (
@@ -183,18 +125,7 @@ export default function HomeScreen() {
     </ThemedView>
   ) : (
     <View style={styles.state}>
-      <ThemedText type="subtitle">Your first postcard is waiting.</ThemedText>
-      <ThemedText style={styles.emptyCopy} themeColor="textSecondary">
-        Pick a photo and create your first card.
-      </ThemedText>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push('/explore')}
-        style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}>
-        <ThemedText style={styles.createButtonText} type="smallBold">
-          Create a postcard
-        </ThemedText>
-      </Pressable>
+      <ThemedText themeColor="textSecondary">No postcards yet.</ThemedText>
     </View>
   );
 
@@ -202,8 +133,13 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <Animated.FlatList
         ListEmptyComponent={emptyState}
-        ListHeaderComponent={header}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          {
+            paddingBottom:
+              insets.bottom + CREATE_BUTTON_HEIGHT + Spacing.four * 2,
+          },
+        ]}
         contentInsetAdjustmentBehavior="automatic"
         data={postcards}
         initialNumToRender={6}
@@ -218,6 +154,31 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         windowSize={7}
       />
+
+      <View
+        pointerEvents="box-none"
+        style={[styles.createButtonOverlay, { bottom: insets.bottom + Spacing.three }]}>
+        <Pressable
+          accessibilityHint="Opens the postcard editor"
+          accessibilityLabel="Create postcard"
+          accessibilityRole="button"
+          onPress={() => router.push('/explore')}
+          style={({ pressed }) => [
+            styles.createButton,
+            pressed && styles.createButtonPressed,
+          ]}>
+          <SymbolView
+            name={{
+              ios: 'rectangle.on.rectangle.angled',
+              android: 'cards',
+            }}
+            size={21}
+            tintColor="#ffffff"
+            weight="semibold"
+          />
+          <ThemedText style={styles.createButtonText}>Create</ThemedText>
+        </Pressable>
+      </View>
     </ThemedView>
   );
 }
@@ -227,90 +188,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: Spacing.six,
-  },
-  headerShell: {
     alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
   },
-  header: {
-    gap: Spacing.four,
-    maxWidth: MaxContentWidth,
-    paddingBottom: Spacing.four,
-    width: '100%',
-  },
-  brandRow: {
+  createButtonOverlay: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  mark: {
-    alignItems: 'center',
-    backgroundColor: '#f3d949',
-    borderCurve: 'continuous',
-    borderRadius: 14,
-    height: 34,
-    justifyContent: 'center',
-    transform: [{ rotate: '-5deg' }],
-    width: 34,
-  },
-  markText: {
-    color: '#171717',
-    fontSize: 20,
-    fontWeight: '900',
-  },
-  titleRow: {
-    alignItems: 'flex-end',
-    flexDirection: 'row',
-    gap: Spacing.three,
-    justifyContent: 'space-between',
-  },
-  titleCopy: {
-    flex: 1,
-    gap: Spacing.two,
-  },
-  title: {
-    fontSize: 38,
-    lineHeight: 42,
-  },
-  subtitle: {
-    lineHeight: 22,
-    maxWidth: 500,
+    height: CREATE_BUTTON_HEIGHT,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    zIndex: 10,
   },
   createButton: {
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#ff5a36',
-    borderCurve: 'continuous',
-    borderRadius: Spacing.five,
+    backgroundColor: '#171717',
+    borderRadius: CREATE_BUTTON_HEIGHT / 2,
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+    flexDirection: 'row',
+    gap: Spacing.two,
+    height: CREATE_BUTTON_HEIGHT,
     justifyContent: 'center',
-    minHeight: 44,
     paddingHorizontal: Spacing.four,
+  },
+  createButtonPressed: {
+    opacity: 0.72,
+    transform: [{ scale: 0.96 }],
   },
   createButtonText: {
     color: '#ffffff',
-  },
-  inlineError: {
-    alignItems: 'center',
-    borderCurve: 'continuous',
-    borderRadius: Spacing.three,
-    flexDirection: 'row',
-    gap: Spacing.three,
-    padding: Spacing.three,
-  },
-  inlineErrorCopy: {
-    flex: 1,
-    gap: Spacing.one,
-  },
-  inlineRetry: {
-    borderColor: 'rgba(127, 127, 127, 0.4)',
-    borderCurve: 'continuous',
-    borderRadius: Spacing.five,
-    borderWidth: 1,
-    minHeight: 44,
-    paddingHorizontal: Spacing.three,
-    justifyContent: 'center',
+    fontSize: 17,
+    fontWeight: '700',
   },
   state: {
     alignItems: 'center',
@@ -336,10 +242,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: Spacing.four,
     justifyContent: 'center',
-  },
-  emptyCopy: {
-    maxWidth: 360,
-    textAlign: 'center',
   },
   pressed: {
     opacity: 0.68,

@@ -57,21 +57,12 @@ export function PostcardListCard({
   const rotationX = useDerivedValue(() =>
     reducedMotion ? 0 : clamp(position.value * -0.15, -0.23, 0.23),
   );
-  const rotationY = useDerivedValue(() => {
-    const deckLean = index % 2 === 0 ? -0.035 : 0.035;
-    const scrollLean = clamp(position.value * 0.025, -0.04, 0.04);
-    return flipRotation.value + (reducedMotion ? 0 : deckLean + scrollLean);
-  });
   const scale = useDerivedValue(() =>
     reducedMotion
       ? 1
       : 1 - Math.min(0.1, Math.abs(position.value) * 0.055),
   );
-  const translateX = useDerivedValue(() =>
-    reducedMotion
-      ? 0
-      : (index % 2 === 0 ? -4 : 4) + clamp(position.value * 3, -5, 5),
-  );
+  const translateX = useSharedValue(0);
   const translateY = useDerivedValue(() => 0);
 
   const flip = () => {
@@ -106,7 +97,7 @@ export function PostcardListCard({
           frontImage={postcard.frontImage}
           height={cardHeight}
           rotationX={rotationX}
-          rotationY={rotationY}
+          rotationY={flipRotation}
           scale={scale}
           translateX={translateX}
           translateY={translateY}
@@ -124,6 +115,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cardButton: {
+    alignSelf: 'center',
     borderCurve: 'continuous',
     position: 'absolute',
     top: 0,
