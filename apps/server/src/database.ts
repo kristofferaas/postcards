@@ -3,7 +3,7 @@ import { SqliteClient, SqliteMigrator } from "@effect/sql-sqlite-node"
 import { Config, Effect, FileSystem, Layer, Path } from "effect"
 import * as Context from "effect/Context"
 import type { SqlClient } from "effect/unstable/sql"
-import { createPostcards } from "./migrations/0001_create_postcards.js"
+import { createPostcardDesignsAndSentPostcards } from "./migrations/0001_create_postcard_designs_and_sent_postcards.js"
 
 const databasePath = Config.string("DATABASE_PATH").pipe(
   Config.withDefault("./data/post-cards.sqlite")
@@ -35,9 +35,12 @@ export class Database extends Context.Service<
     Effect.gen(function*() {
       const sql = yield* SqliteClient.SqliteClient
 
+      yield* sql`PRAGMA foreign_keys = ON`
+
       yield* SqliteMigrator.run({
         loader: SqliteMigrator.fromRecord({
-          "0001_create_postcards": createPostcards
+          "0001_create_postcard_designs_and_sent_postcards":
+            createPostcardDesignsAndSentPostcards
         })
       })
 

@@ -27,36 +27,8 @@ const seed = Effect.gen(function*() {
 
   yield* database.sql.withTransaction(
     Effect.gen(function*() {
-      yield* database.sql`DELETE FROM postcards`
-
-      yield* database.sql`
-        INSERT INTO postcards (
-          sent_at,
-          opened_at,
-          front_image
-        )
-        VALUES
-          (
-            ${"2026-07-18T09:15:00.000Z"},
-            ${"2026-07-18T11:42:00.000Z"},
-            ${"fjord"}
-          ),
-          (
-            ${"2026-07-21T14:30:00.000Z"},
-            ${null},
-            ${"fjord"}
-          ),
-          (
-            ${"2026-07-24T07:05:00.000Z"},
-            ${"2026-07-25T16:20:00.000Z"},
-            ${"fjord"}
-          ),
-          (
-            ${null},
-            ${null},
-            ${"fjord"}
-          )
-      `
+      yield* database.sql`DELETE FROM sent_postcards`
+      yield* database.sql`DELETE FROM postcard_designs`
     })
   )
 
