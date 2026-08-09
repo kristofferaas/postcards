@@ -1,6 +1,6 @@
 import { NodeRuntime } from "@effect/platform-node"
 import { Config, Effect, Schema } from "effect"
-import { Database } from "./database.js"
+import { Database } from "./database.ts"
 
 class ProductionSeedError extends Schema.TaggedErrorClass<ProductionSeedError>()(
   "ProductionSeedError",

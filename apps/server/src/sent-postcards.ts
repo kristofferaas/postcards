@@ -2,8 +2,8 @@ import { Effect, Layer, Schema } from "effect"
 import * as Context from "effect/Context"
 import type * as PlatformError from "effect/PlatformError"
 import * as SqlError from "effect/unstable/sql/SqlError"
-import { BlobNotFound, BlobStorage, BlobUri } from "./blob-storage.js"
-import { Database } from "./database.js"
+import { BlobNotFound, BlobStorage, BlobUri } from "./blob-storage.ts"
+import { Database } from "./database.ts"
 
 export class SentPostcard extends Schema.Class<SentPostcard>("SentPostcard")({
   id: Schema.Int,

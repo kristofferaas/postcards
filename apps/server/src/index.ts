@@ -2,11 +2,11 @@ import { createServer } from "node:http"
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node"
 import { Config, Layer } from "effect"
 import { HttpRouter } from "effect/unstable/http"
-import { ApiLive } from "./app.js"
-import { BlobStorage } from "./blob-storage.js"
-import { Database } from "./database.js"
-import { PostcardDesigns } from "./postcard-designs.js"
-import { SentPostcards } from "./sent-postcards.js"
+import { ApiLive } from "./app.ts"
+import { BlobStorage } from "./blob-storage.ts"
+import { Database } from "./database.ts"
+import { PostcardDesigns } from "./postcard-designs.ts"
+import { SentPostcards } from "./sent-postcards.ts"
 
 const ServerLive = HttpRouter.serve(ApiLive).pipe(
   Layer.provide(PostcardDesigns.layer),

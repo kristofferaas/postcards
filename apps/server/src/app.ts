@@ -8,12 +8,12 @@ import {
   BlobKey,
   BlobStorage,
   blobUriFromKey
-} from "./blob-storage.js"
+} from "./blob-storage.ts"
 import {
   CreatePostcardDesign,
   PostcardDesigns
-} from "./postcard-designs.js"
-import { SendPostcard, SentPostcards } from "./sent-postcards.js"
+} from "./postcard-designs.ts"
+import { SendPostcard, SentPostcards } from "./sent-postcards.ts"
 
 const blobNotFoundResponse = (uri: string) =>
   HttpServerResponse.jsonUnsafe(

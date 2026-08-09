@@ -3,7 +3,7 @@ import { SqliteClient, SqliteMigrator } from "@effect/sql-sqlite-node"
 import { Config, Effect, FileSystem, Layer, Path } from "effect"
 import * as Context from "effect/Context"
 import type { SqlClient } from "effect/unstable/sql"
-import { createPostcardDesignsAndSentPostcards } from "./migrations/0001_create_postcard_designs_and_sent_postcards.js"
+import { createPostcardDesignsAndSentPostcards } from "./migrations/0001_create_postcard_designs_and_sent_postcards.ts"
 
 const databasePath = Config.string("DATABASE_PATH").pipe(
   Config.withDefault("./data/post-cards.sqlite")
