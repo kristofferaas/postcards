@@ -7,7 +7,7 @@ import {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import type { Postcard } from '@/api/postcards';
+import { postcardImageUrl, type Postcard } from '@/api/postcards';
 import { SkiaPostcard } from '@/components/skia-postcard';
 
 type PostcardListCardProps = {
@@ -94,7 +94,7 @@ export function PostcardListCard({
           pressed && styles.pressed,
         ]}>
         <SkiaPostcard
-          frontImage={postcard.frontImage}
+          frontImage={postcardImageUrl(postcard.frontImageUri)}
           height={cardHeight}
           rotationX={rotationX}
           rotationY={flipRotation}

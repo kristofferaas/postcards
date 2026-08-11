@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import * as Effect from "effect/Effect"
 import { SqlClient } from "effect/unstable/sql"
 
 export const createPostcardDesignsAndSentPostcards = Effect.gen(function*() {

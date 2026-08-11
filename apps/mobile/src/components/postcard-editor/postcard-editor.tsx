@@ -1,5 +1,6 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { useCallback, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -9,12 +10,49 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  getPostcardDesigns,
+  postcardImageUrl,
+} from '@/api/postcards';
+
 import { InteractiveSkiaPostcard } from './interactive-skia-postcard';
 
 export function PostcardEditor() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
+  const [frontImage, setFrontImage] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const controller = new AbortController();
+      setLoadError(null);
+
+      void getPostcardDesigns(controller.signal)
+        .then((designs) => {
+          if (controller.signal.aborted) return;
+
+          const design = designs[0];
+          if (design === undefined) {
+            setLoadError('No postcard designs. Run pnpm data:seed.');
+            return;
+          }
+
+          setFrontImage(postcardImageUrl(design.frontImageUri));
+        })
+        .catch((cause: unknown) => {
+          if (controller.signal.aborted) return;
+          setLoadError(
+            cause instanceof Error
+              ? cause.message
+              : 'Could not load postcard designs.',
+          );
+        });
+
+      return () => controller.abort();
+    }, []),
+  );
 
   return (
     <View style={styles.screen}>
@@ -24,11 +62,17 @@ export function PostcardEditor() {
         accessibilityRole="image"
         style={styles.postcard}>
         <InteractiveSkiaPostcard
-          frontImage="fjord"
+          frontImage={frontImage}
           height={height}
           width={width}
         />
       </View>
+
+      {loadError ? (
+        <Text selectable style={styles.loadError}>
+          {loadError}
+        </Text>
+      ) : null}
 
       <Pressable
         accessibilityHint="Returns to the postcard list"
@@ -75,6 +119,14 @@ const styles = StyleSheet.create({
   },
   postcard: {
     flex: 1,
+  },
+  loadError: {
+    alignSelf: 'center',
+    color: '#6b6359',
+    maxWidth: 320,
+    position: 'absolute',
+    textAlign: 'center',
+    top: '52%',
   },
   toolbarButton: {
     alignItems: 'center',

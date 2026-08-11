@@ -1,68 +1,86 @@
+import {
+  POSTCARD_DESIGNS_RPC_METHODS,
+  SENT_POSTCARDS_RPC_METHODS,
+  PostcardDesignsRpc,
+  SentPostcardsRpc,
+  type PostcardDesign,
+  type SendPostcard,
+  type SentPostcard
+} from '@post-cards/contracts';
+import * as Effect from 'effect/Effect';
+import * as Layer from 'effect/Layer';
+import { fetch } from 'expo/fetch';
+import * as FetchHttpClient from 'effect/unstable/http/FetchHttpClient';
+import * as RpcClient from 'effect/unstable/rpc/RpcClient';
+import * as RpcSerialization from 'effect/unstable/rpc/RpcSerialization';
 import { Platform } from 'react-native';
 
-export type Postcard = {
-  readonly id: number;
-  readonly sentAt: string | null;
-  readonly openedAt: string | null;
-  readonly frontImage: string;
-};
+export type Postcard = SentPostcard;
+export type SendPostcardInput = SendPostcard;
 
-export type CreatePostcardInput = Omit<Postcard, 'id' | 'sentAt' | 'openedAt'>;
-
-const defaultApiUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+const defaultApiUrl =
+  Platform.OS === 'android'
+    ? 'http://10.0.2.2:3000'
+    : 'http://localhost:3000';
 
 export const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? defaultApiUrl;
 
-const isNullableString = (value: unknown): value is string | null =>
-  typeof value === 'string' || value === null;
+const fetchHttpClientLayer = FetchHttpClient.layer.pipe(
+  Layer.provide(Layer.succeed(FetchHttpClient.Fetch, fetch)),
+);
 
-const isPostcard = (value: unknown): value is Postcard => {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
+const rpcProtocolLayer = RpcClient.layerProtocolHttp({
+  url: new URL('/rpc', apiUrl).toString(),
+}).pipe(
+  Layer.provide([fetchHttpClientLayer, RpcSerialization.layerJson]),
+);
 
-  const postcard = value as Record<string, unknown>;
+const listPostcards = Effect.scoped(
+  RpcClient.make(SentPostcardsRpc).pipe(
+    Effect.flatMap((client) =>
+      client[SENT_POSTCARDS_RPC_METHODS.list](),
+    ),
+    Effect.provide(rpcProtocolLayer),
+  ),
+);
 
-  return (
-    typeof postcard.id === 'number' &&
-    isNullableString(postcard.sentAt) &&
-    isNullableString(postcard.openedAt) &&
-    typeof postcard.frontImage === 'string'
-  );
-};
+const listPostcardDesigns = Effect.scoped(
+  RpcClient.make(PostcardDesignsRpc).pipe(
+    Effect.flatMap((client) =>
+      client[POSTCARD_DESIGNS_RPC_METHODS.list](),
+    ),
+    Effect.provide(rpcProtocolLayer),
+  ),
+);
 
-export async function getPostcards(signal?: AbortSignal): Promise<readonly Postcard[]> {
-  const response = await fetch(`${apiUrl}/postcards`, { signal });
+export const postcardImageUrl = (uri: string) =>
+  new URL(uri, apiUrl).toString();
 
-  if (!response.ok) {
-    throw new Error(`The server responded with ${response.status}.`);
-  }
-
-  const data: unknown = await response.json();
-
-  if (!Array.isArray(data) || !data.every(isPostcard)) {
-    throw new Error('The server returned an invalid postcard list.');
-  }
-
-  return data;
+export function getPostcards(
+  signal?: AbortSignal,
+): Promise<readonly SentPostcard[]> {
+  return signal === undefined
+    ? Effect.runPromise(listPostcards)
+    : Effect.runPromise(listPostcards, { signal });
 }
 
-export async function createPostcard(input: CreatePostcardInput): Promise<Postcard> {
-  const response = await fetch(`${apiUrl}/postcards`, {
-    body: JSON.stringify(input),
-    headers: { 'Content-Type': 'application/json' },
-    method: 'POST',
-  });
+export function getPostcardDesigns(
+  signal?: AbortSignal,
+): Promise<readonly PostcardDesign[]> {
+  return signal === undefined
+    ? Effect.runPromise(listPostcardDesigns)
+    : Effect.runPromise(listPostcardDesigns, { signal });
+}
 
-  if (!response.ok) {
-    throw new Error(`The server responded with ${response.status}.`);
-  }
-
-  const data: unknown = await response.json();
-
-  if (!isPostcard(data)) {
-    throw new Error('The server returned an invalid postcard.');
-  }
-
-  return data;
+export function sendPostcard(input: SendPostcardInput): Promise<SentPostcard> {
+  return Effect.runPromise(
+    Effect.scoped(
+      RpcClient.make(SentPostcardsRpc).pipe(
+        Effect.flatMap((client) =>
+          client[SENT_POSTCARDS_RPC_METHODS.send](input),
+        ),
+        Effect.provide(rpcProtocolLayer),
+      ),
+    ),
+  );
 }

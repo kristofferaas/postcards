@@ -1,6 +1,11 @@
+// NodeHttpServer requires the native server constructor at the platform boundary.
+// @effect-diagnostics effect/nodeBuiltinImport:off
 import { createServer } from "node:http"
-import { NodeHttpServer, NodeRuntime } from "@effect/platform-node"
-import { Config, Layer } from "effect"
+// @effect-diagnostics effect/nodeBuiltinImport:error
+import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer"
+import * as NodeRuntime from "@effect/platform-node/NodeRuntime"
+import * as Config from "effect/Config"
+import * as Layer from "effect/Layer"
 import { HttpRouter } from "effect/unstable/http"
 import { ApiLive } from "./app.ts"
 import { BlobStorage } from "./blob-storage.ts"

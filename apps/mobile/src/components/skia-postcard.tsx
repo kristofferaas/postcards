@@ -17,10 +17,8 @@ import {
 
 export const POSTCARD_ASPECT_RATIO = 148 / 105;
 
-const fjordImage = require('@/assets/images/postcards/norway-fjord.jpg');
-
 type SkiaPostcardProps = {
-  readonly frontImage: string;
+  readonly frontImage: string | null;
   readonly height: number;
   readonly rotationX: SharedValue<number>;
   readonly rotationY: SharedValue<number>;
@@ -29,9 +27,6 @@ type SkiaPostcardProps = {
   readonly translateY: SharedValue<number>;
   readonly width: number;
 };
-
-const frontImageSource = (frontImage: string) =>
-  frontImage === 'fjord' ? fjordImage : frontImage;
 
 export function SkiaPostcard({
   frontImage,
@@ -43,7 +38,7 @@ export function SkiaPostcard({
   translateY,
   width,
 }: SkiaPostcardProps) {
-  const image = useImage(frontImageSource(frontImage));
+  const image = useImage(frontImage);
   const padding = Math.max(10, Math.min(width, height) * 0.035);
   const availableWidth = Math.max(1, width - padding * 2);
   const availableHeight = Math.max(1, height - padding * 2);

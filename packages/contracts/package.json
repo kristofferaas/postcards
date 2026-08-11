@@ -1,0 +1,21 @@
+{
+  "name": "@post-cards/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "effect": "4.0.0-beta.103"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

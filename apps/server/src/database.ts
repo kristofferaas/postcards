@@ -1,13 +1,14 @@
-import { NodeFileSystem, NodePath } from "@effect/platform-node"
+import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem"
+import * as NodePath from "@effect/platform-node/NodePath"
 import { SqliteClient, SqliteMigrator } from "@effect/sql-sqlite-node"
-import { Config, Effect, FileSystem, Layer, Path } from "effect"
 import * as Context from "effect/Context"
+import * as Effect from "effect/Effect"
+import * as FileSystem from "effect/FileSystem"
+import * as Layer from "effect/Layer"
+import * as Path from "effect/Path"
 import type { SqlClient } from "effect/unstable/sql"
+import { databasePath } from "./data-config.ts"
 import { createPostcardDesignsAndSentPostcards } from "./migrations/0001_create_postcard_designs_and_sent_postcards.ts"
-
-const databasePath = Config.string("DATABASE_PATH").pipe(
-  Config.withDefault("./data/post-cards.sqlite")
-)
 
 const sqliteLayer = Layer.unwrap(
   Effect.gen(function*() {
@@ -29,7 +30,7 @@ export class Database extends Context.Service<
     readonly filename: string
     readonly sql: SqlClient.SqlClient
   }
->()("@post-cards/server/Database") {
+>()("@post-cards/server/database") {
   static readonly layer = Layer.effect(
     Database,
     Effect.gen(function*() {

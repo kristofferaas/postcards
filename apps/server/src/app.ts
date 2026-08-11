@@ -1,19 +1,14 @@
-import { Effect, Layer, Schema } from "effect"
+import { BlobKey } from "@post-cards/contracts"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import * as Schema from "effect/Schema"
 import {
   HttpRouter,
   HttpServerRequest,
   HttpServerResponse
 } from "effect/unstable/http"
-import {
-  BlobKey,
-  BlobStorage,
-  blobUriFromKey
-} from "./blob-storage.ts"
-import {
-  CreatePostcardDesign,
-  PostcardDesigns
-} from "./postcard-designs.ts"
-import { SendPostcard, SentPostcards } from "./sent-postcards.ts"
+import { BlobStorage, blobUriFromKey } from "./blob-storage.ts"
+import { PostcardsRpcRouteLive } from "./rpc.ts"
 
 const blobNotFoundResponse = (uri: string) =>
   HttpServerResponse.jsonUnsafe(
@@ -21,17 +16,9 @@ const blobNotFoundResponse = (uri: string) =>
     { status: 404 }
   )
 
-const blobReferenceNotFoundResponse = (uri: string) =>
-  HttpServerResponse.jsonUnsafe(
-    { error: "BlobNotFound", uri },
-    { status: 422 }
-  )
-
 const RoutesLive = HttpRouter.use((router) =>
   Effect.gen(function*() {
     const blobStorage = yield* BlobStorage
-    const postcardDesigns = yield* PostcardDesigns
-    const sentPostcards = yield* SentPostcards
 
     yield* router.add(
       "GET",
@@ -105,54 +92,12 @@ const RoutesLive = HttpRouter.use((router) =>
       )
     )
 
-    yield* router.add(
-      "GET",
-      "/postcard-designs",
-      postcardDesigns.all().pipe(
-        Effect.map(HttpServerResponse.jsonUnsafe)
-      )
-    )
-
-    yield* router.add(
-      "POST",
-      "/postcard-designs",
-      Effect.gen(function*() {
-        const input = yield* HttpServerRequest.schemaBodyJson(CreatePostcardDesign)
-        const design = yield* postcardDesigns.create(input)
-        return yield* HttpServerResponse.json(design, { status: 201 })
-      }).pipe(
-        Effect.catchTag("BlobNotFound", (error) =>
-          Effect.succeed(blobReferenceNotFoundResponse(error.uri))
-        )
-      )
-    )
-
-    yield* router.add(
-      "GET",
-      "/sent-postcards",
-      sentPostcards.all().pipe(
-        Effect.map(HttpServerResponse.jsonUnsafe)
-      )
-    )
-
-    yield* router.add(
-      "POST",
-      "/sent-postcards",
-      Effect.gen(function*() {
-        const input = yield* HttpServerRequest.schemaBodyJson(SendPostcard)
-        const postcard = yield* sentPostcards.send(input)
-        return yield* HttpServerResponse.json(postcard, { status: 201 })
-      }).pipe(
-        Effect.catchTag("BlobNotFound", (error) =>
-          Effect.succeed(blobReferenceNotFoundResponse(error.uri))
-        )
-      )
-    )
   })
 )
 
-export const ApiLive = Layer.merge(
+export const ApiLive = Layer.mergeAll(
   RoutesLive,
+  PostcardsRpcRouteLive,
   HttpRouter.cors({
     allowedHeaders: ["Content-Type"],
     allowedMethods: ["GET", "POST", "OPTIONS"]

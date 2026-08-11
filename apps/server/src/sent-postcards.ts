@@ -1,24 +1,17 @@
-import { Effect, Layer, Schema } from "effect"
+import {
+  BlobNotFound,
+  type SendPostcard,
+  SentPostcard
+} from "@post-cards/contracts"
 import * as Context from "effect/Context"
+import * as DateTime from "effect/DateTime"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
 import type * as PlatformError from "effect/PlatformError"
+import * as Schema from "effect/Schema"
 import * as SqlError from "effect/unstable/sql/SqlError"
-import { BlobNotFound, BlobStorage, BlobUri } from "./blob-storage.ts"
+import { BlobStorage } from "./blob-storage.ts"
 import { Database } from "./database.ts"
-
-export class SentPostcard extends Schema.Class<SentPostcard>("SentPostcard")({
-  id: Schema.Int,
-  postcardDesignId: Schema.Int,
-  frontImageUri: BlobUri,
-  backImageUri: BlobUri,
-  sentAt: Schema.String,
-  openedAt: Schema.NullOr(Schema.String)
-}) {}
-
-export class SendPostcard extends Schema.Class<SendPostcard>("SendPostcard")({
-  postcardDesignId: Schema.Int,
-  frontImageUri: BlobUri,
-  backImageUri: BlobUri
-}) {}
 
 const decodeRows = (rows: ReadonlyArray<unknown>) =>
   Schema.decodeUnknownEffect(Schema.Array(SentPostcard))(rows)
@@ -38,7 +31,7 @@ export class SentPostcards extends Context.Service<
       | Schema.SchemaError
     >
   }
->()("@post-cards/server/SentPostcards") {
+>()("@post-cards/server/sent-postcards/SentPostcards") {
   static readonly layer = Layer.effect(
     SentPostcards,
     Effect.gen(function*() {
@@ -69,7 +62,7 @@ export class SentPostcards extends Context.Service<
           blobStorage.require(input.backImageUri)
         ])
 
-        const sentAt = new Date().toISOString()
+        const sentAt = DateTime.formatIso(yield* DateTime.now)
         const rows = yield* database.sql`
           INSERT INTO sent_postcards (
             postcard_design_id,

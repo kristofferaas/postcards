@@ -31,7 +31,7 @@ const clamp = (value: number, minimum: number, maximum: number) => {
 };
 
 type InteractiveSkiaPostcardProps = {
-  readonly frontImage: string;
+  readonly frontImage: string | null;
   readonly height: number;
   readonly width: number;
 };

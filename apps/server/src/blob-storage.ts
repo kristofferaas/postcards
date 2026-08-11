@@ -1,42 +1,22 @@
 import { createHash } from "node:crypto"
-import { NodeFileSystem, NodePath } from "@effect/platform-node"
-import { Config, Effect, FileSystem, Layer, Path, Schema } from "effect"
+import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem"
+import * as NodePath from "@effect/platform-node/NodePath"
+import {
+  BlobKey,
+  BlobNotFound,
+  type BlobUri,
+  BlobTooLarge,
+  StoredBlob,
+  UnsupportedImageContentType
+} from "@post-cards/contracts"
+import * as Config from "effect/Config"
 import * as Context from "effect/Context"
+import * as Effect from "effect/Effect"
+import * as FileSystem from "effect/FileSystem"
+import * as Layer from "effect/Layer"
+import * as Path from "effect/Path"
 import type * as PlatformError from "effect/PlatformError"
-
-const blobKeyPattern = /^[a-f0-9]{64}\.(?:heic|heif|jpg|png|webp)$/
-
-export const BlobKey = Schema.String.check(Schema.isPattern(blobKeyPattern)).pipe(
-  Schema.brand("BlobKey")
-)
-export type BlobKey = typeof BlobKey.Type
-
-export const BlobUri = Schema.String.check(
-  Schema.isPattern(/^\/blobs\/[a-f0-9]{64}\.(?:heic|heif|jpg|png|webp)$/)
-).pipe(Schema.brand("BlobUri"))
-export type BlobUri = typeof BlobUri.Type
-
-export class StoredBlob extends Schema.Class<StoredBlob>("StoredBlob")({
-  uri: BlobUri
-}) {}
-
-export class BlobNotFound extends Schema.TaggedErrorClass<BlobNotFound>()(
-  "BlobNotFound",
-  { uri: BlobUri }
-) {}
-
-export class UnsupportedImageContentType extends Schema.TaggedErrorClass<UnsupportedImageContentType>()(
-  "UnsupportedImageContentType",
-  { contentType: Schema.String }
-) {}
-
-export class BlobTooLarge extends Schema.TaggedErrorClass<BlobTooLarge>()(
-  "BlobTooLarge",
-  {
-    actualBytes: Schema.Number,
-    maximumBytes: Schema.Number
-  }
-) {}
+import { blobStoragePath } from "./data-config.ts"
 
 const extensionsByContentType = {
   "image/heic": "heic",
@@ -103,13 +83,11 @@ export class BlobStorage extends Context.Service<
       uri: BlobUri
     ) => Effect.Effect<void, BlobNotFound | PlatformError.PlatformError>
   }
->()("@post-cards/server/BlobStorage") {
+>()("@post-cards/server/blob-storage/BlobStorage") {
   static readonly localLayer = Layer.effect(
     BlobStorage,
     Effect.gen(function*() {
-      const root = yield* Config.string("BLOB_STORAGE_PATH").pipe(
-        Config.withDefault("./data/blobs")
-      )
+      const root = yield* blobStoragePath
       const maximumBytes = yield* Config.int("BLOB_MAX_BYTES").pipe(
         Config.withDefault(20 * 1024 * 1024)
       )
