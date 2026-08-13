@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -10,10 +10,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  getPostcardDesigns,
-  postcardImageUrl,
-} from '@/api/postcards';
+import { postcardImageUrl } from '@/api/postcards';
+import { usePostcardDesigns } from '@/state/postcards';
 
 import { InteractiveSkiaPostcard } from './interactive-skia-postcard';
 
@@ -21,38 +19,21 @@ export function PostcardEditor() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
-  const [frontImage, setFrontImage] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const { designs, error, isInitialLoading, refresh } = usePostcardDesigns();
 
   useFocusEffect(
     useCallback(() => {
-      const controller = new AbortController();
-      setLoadError(null);
-
-      void getPostcardDesigns(controller.signal)
-        .then((designs) => {
-          if (controller.signal.aborted) return;
-
-          const design = designs[0];
-          if (design === undefined) {
-            setLoadError('No postcard designs. Run pnpm data:seed.');
-            return;
-          }
-
-          setFrontImage(postcardImageUrl(design.frontImageUri));
-        })
-        .catch((cause: unknown) => {
-          if (controller.signal.aborted) return;
-          setLoadError(
-            cause instanceof Error
-              ? cause.message
-              : 'Could not load postcard designs.',
-          );
-        });
-
-      return () => controller.abort();
-    }, []),
+      refresh();
+    }, [refresh]),
   );
+
+  const design = designs[0];
+  const frontImage = design ? postcardImageUrl(design.frontImageUri) : null;
+  const loadError =
+    error ??
+    (!isInitialLoading && design === undefined
+      ? 'No postcard designs. Run pnpm data:seed.'
+      : null);
 
   return (
     <View style={styles.screen}>

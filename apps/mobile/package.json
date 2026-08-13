@@ -3,6 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@effect/atom-react": "4.0.0-beta.103",
     "@expo/ui": "~57.0.7",
     "@post-cards/contracts": "workspace:*",
     "@shopify/react-native-skia": "2.6.2",
