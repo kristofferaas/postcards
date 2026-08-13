@@ -20,6 +20,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@effect/atom-react':
+        specifier: 4.0.0-beta.103
+        version: 4.0.0-beta.103(effect@4.0.0-beta.103)(react@19.2.3)(scheduler@0.27.0)
       '@expo/ui':
         specifier: ~57.0.7
         version: 57.0.7(@babel/core@7.29.7)(@types/react@19.2.17)(expo@57.0.8)(react-dom@19.2.3(react@19.2.3))(react-native-worklets@0.10.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -533,6 +536,13 @@ packages:
   '@babel/types@7.29.7':
     resolution: {integrity: sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==}
     engines: {node: '>=6.9.0'}
+
+  '@effect/atom-react@4.0.0-beta.103':
+    resolution: {integrity: sha512-1HJ+Cyq4ssLnH2UZ8OVnhtMGAySabtzZo7imKC+vEfxOW3lvJYpGZeicxQX5Ii/7AdvlR+19p/6K2a5IPKYAow==}
+    peerDependencies:
+      effect: ^4.0.0-beta.103
+      react: ^19.2.4
+      scheduler: '*'
 
   '@effect/language-service@0.87.1':
     resolution: {integrity: sha512-kcljlJmEgqg5mFAM6UShJYJjMqJb3TbHHxrK8Qoubvwugc0aVWpRkbdgQvK5b17puOt3BKXXKOmcV+oQt0oQqQ==}
@@ -4627,6 +4637,12 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
+  '@effect/atom-react@4.0.0-beta.103(effect@4.0.0-beta.103)(react@19.2.3)(scheduler@0.27.0)':
+    dependencies:
+      effect: 4.0.0-beta.103
+      react: 19.2.3
+      scheduler: 0.27.0
+
   '@effect/language-service@0.87.1': {}
 
   '@effect/platform-node-shared@4.0.0-beta.103(effect@4.0.0-beta.103)':
@@ -5500,7 +5516,9 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89':
     optional: true
