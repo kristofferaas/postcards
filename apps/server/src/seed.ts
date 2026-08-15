@@ -13,6 +13,8 @@ import {
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
+import * as HttpBody from "effect/unstable/http/HttpBody"
+import * as HttpClient from "effect/unstable/http/HttpClient"
 import * as RpcClient from "effect/unstable/rpc/RpcClient"
 import * as RpcSerialization from "effect/unstable/rpc/RpcSerialization"
 
@@ -52,26 +54,23 @@ const postcardFixtures = [
   }
 ] as const satisfies ReadonlyArray<PostcardFixture>
 
+class SeedUploadFailed extends Schema.TaggedError<SeedUploadFailed>()(
+  "SeedUploadFailed",
+  { status: Schema.Number }
+) {}
+
 const upload = Effect.fn("Seed.upload")(function*(fixture: ImageFixture) {
   const data = yield* Effect.tryPromise(() => readFile(fixture.url))
-  // The Node CLI uses the native Fetch implementation at its HTTP boundary.
-  // @effect-diagnostics effect/globalFetch:off
-  const response = yield* Effect.tryPromise(() =>
-    fetch(new URL("/blobs", apiUrl), {
-      method: "POST",
-      headers: { "content-type": fixture.contentType },
-      body: data
-    })
+  const response = yield* HttpClient.post(
+    new URL("/blobs", apiUrl).toString(),
+    { body: HttpBody.uint8Array(data, fixture.contentType) }
   )
-  // @effect-diagnostics effect/globalFetch:error
 
-  if (!response.ok) {
-    return yield* Effect.fail(
-      new Error(`Blob upload failed with HTTP ${response.status}.`)
-    )
+  if (response.status < 200 || response.status >= 300) {
+    return yield* new SeedUploadFailed({ status: response.status })
   }
 
-  const payload = yield* Effect.tryPromise(() => response.json())
+  const payload = yield* response.json
   return yield* Schema.decodeUnknownEffect(StoredBlob)(payload)
 })
 
@@ -125,6 +124,6 @@ const seed = Effect.gen(function*() {
   )
 
   yield* Effect.logInfo(`Seeded postcard fixtures at ${apiUrl.origin}`)
-}).pipe(Effect.provide(RpcLive))
+}).pipe(Effect.provide([RpcLive, NodeHttpClient.layerUndici]))
 
 NodeRuntime.runMain(Effect.scoped(seed))

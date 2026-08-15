@@ -126,7 +126,7 @@ export class BlobStorage extends Context.Service<
         ) {
           const exists = yield* bucket.head(blobKeyFromUri(uri))
           if (!exists) {
-            return yield* Effect.fail(new BlobNotFound({ uri }))
+            return yield* new BlobNotFound({ uri })
           }
         })
 
@@ -134,7 +134,7 @@ export class BlobStorage extends Context.Service<
           const key = blobKeyFromUri(uri)
           const data = yield* bucket.get(key)
           if (data === null) {
-            return yield* Effect.fail(new BlobNotFound({ uri }))
+            return yield* new BlobNotFound({ uri })
           }
 
           return {
@@ -149,18 +149,14 @@ export class BlobStorage extends Context.Service<
         ) {
           const extension = extensionFor(contentType)
           if (extension === undefined) {
-            return yield* Effect.fail(
-              new UnsupportedImageContentType({ contentType })
-            )
+            return yield* new UnsupportedImageContentType({ contentType })
           }
 
           if (data.byteLength > maximumBytes) {
-            return yield* Effect.fail(
-              new BlobTooLarge({
-                actualBytes: data.byteLength,
-                maximumBytes
-              })
-            )
+            return yield* new BlobTooLarge({
+              actualBytes: data.byteLength,
+              maximumBytes
+            })
           }
 
           const digest = yield* sha256(data)
