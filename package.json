@@ -9,7 +9,6 @@
   "scripts": {
     "build": "turbo run build",
     "check": "turbo run check",
-    "data:reset": "pnpm --filter @post-cards/server data:reset",
     "data:seed": "pnpm --filter @post-cards/server data:seed",
     "dev": "turbo run dev",
     "dev:mobile": "pnpm --filter @post-cards/mobile dev",

@@ -32,7 +32,7 @@ export function PostcardEditor() {
   const loadError =
     error ??
     (!isInitialLoading && design === undefined
-      ? 'No postcard designs. Run pnpm data:seed.'
+      ? 'No postcard designs. Seed the deployed API from the repository.'
       : null);
 
   return (

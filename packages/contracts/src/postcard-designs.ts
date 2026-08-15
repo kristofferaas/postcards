@@ -21,7 +21,7 @@ export class CreatePostcardDesign extends Schema.Class<CreatePostcardDesign>(
   backImageUri: BlobUri
 }) {}
 
-export class PostcardDesignsUnavailable extends Schema.TaggedErrorClass<PostcardDesignsUnavailable>()(
+export class PostcardDesignsUnavailable extends Schema.TaggedError<PostcardDesignsUnavailable>()(
   "PostcardDesignsUnavailable",
   { message: Schema.String }
 ) {}

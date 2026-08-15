@@ -18,7 +18,7 @@ export class SendPostcard extends Schema.Class<SendPostcard>("SendPostcard")({
   backImageUri: BlobUri
 }) {}
 
-export class SentPostcardsUnavailable extends Schema.TaggedErrorClass<SentPostcardsUnavailable>()(
+export class SentPostcardsUnavailable extends Schema.TaggedError<SentPostcardsUnavailable>()(
   "SentPostcardsUnavailable",
   { message: Schema.String }
 ) {}

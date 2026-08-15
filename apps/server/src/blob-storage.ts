@@ -1,6 +1,3 @@
-import { createHash } from "node:crypto"
-import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem"
-import * as NodePath from "@effect/platform-node/NodePath"
 import {
   BlobKey,
   BlobNotFound,
@@ -9,14 +6,10 @@ import {
   StoredBlob,
   UnsupportedImageContentType
 } from "@post-cards/contracts"
-import * as Config from "effect/Config"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
-import * as FileSystem from "effect/FileSystem"
 import * as Layer from "effect/Layer"
-import * as Path from "effect/Path"
-import type * as PlatformError from "effect/PlatformError"
-import { blobStoragePath } from "./data-config.ts"
+import * as Schema from "effect/Schema"
 
 const extensionsByContentType = {
   "image/heic": "heic",
@@ -53,6 +46,22 @@ const contentTypeFor = (key: BlobKey) => {
   ]
 }
 
+const sha256 = (data: Uint8Array) =>
+  Effect.tryPromise({
+    try: () => crypto.subtle.digest("SHA-256", data as BufferSource),
+    catch: (cause) =>
+      new BlobStorageUnavailable({
+        cause: String(cause),
+        message: "Unable to hash the uploaded image."
+      })
+  }).pipe(
+    Effect.map((digest) =>
+      Array.from(new Uint8Array(digest), (byte) =>
+        byte.toString(16).padStart(2, "0")
+      ).join("")
+    )
+  )
+
 export const blobUriFromKey = (key: BlobKey): BlobUri =>
   `/blobs/${key}` as BlobUri
 
@@ -64,86 +73,106 @@ export interface BlobObject {
   readonly data: Uint8Array
 }
 
+export class BlobStorageUnavailable extends Schema.TaggedError<BlobStorageUnavailable>()(
+  "BlobStorageUnavailable",
+  {
+    cause: Schema.String,
+    message: Schema.String
+  }
+) {}
+
+export interface BlobBucket {
+  readonly get: (
+    key: string
+  ) => Effect.Effect<Uint8Array | null, BlobStorageUnavailable>
+  readonly head: (
+    key: string
+  ) => Effect.Effect<boolean, BlobStorageUnavailable>
+  readonly put: (
+    key: string,
+    data: Uint8Array
+  ) => Effect.Effect<void, BlobStorageUnavailable>
+}
+
 export class BlobStorage extends Context.Service<
   BlobStorage,
   {
     readonly get: (
       uri: BlobUri
-    ) => Effect.Effect<BlobObject, BlobNotFound | PlatformError.PlatformError>
+    ) => Effect.Effect<BlobObject, BlobNotFound | BlobStorageUnavailable>
     readonly put: (
       data: Uint8Array,
       contentType: string
     ) => Effect.Effect<
       StoredBlob,
-      | BlobTooLarge
-      | PlatformError.PlatformError
-      | UnsupportedImageContentType
+      BlobStorageUnavailable | BlobTooLarge | UnsupportedImageContentType
     >
     readonly require: (
       uri: BlobUri
-    ) => Effect.Effect<void, BlobNotFound | PlatformError.PlatformError>
+    ) => Effect.Effect<void, BlobNotFound | BlobStorageUnavailable>
   }
 >()("@post-cards/server/blob-storage/BlobStorage") {
-  static readonly localLayer = Layer.effect(
-    BlobStorage,
-    Effect.gen(function*() {
-      const root = yield* blobStoragePath
-      const maximumBytes = yield* Config.int("BLOB_MAX_BYTES").pipe(
-        Config.withDefault(20 * 1024 * 1024)
-      )
-      const fileSystem = yield* FileSystem.FileSystem
-      const path = yield* Path.Path
+  static readonly layer = (
+    bucket: BlobBucket,
+    options?: { readonly maximumBytes?: number }
+  ) =>
+    Layer.effect(
+      BlobStorage,
+      Effect.gen(function*() {
+        const maximumBytes = options?.maximumBytes ?? 20 * 1024 * 1024
 
-      yield* fileSystem.makeDirectory(root, { recursive: true })
+        const require = Effect.fn("BlobStorage.require")(function*(
+          uri: BlobUri
+        ) {
+          const exists = yield* bucket.head(blobKeyFromUri(uri))
+          if (!exists) {
+            return yield* Effect.fail(new BlobNotFound({ uri }))
+          }
+        })
 
-      const require = Effect.fn("BlobStorage.require")(function*(uri: BlobUri) {
-        const exists = yield* fileSystem.exists(
-          path.join(root, blobKeyFromUri(uri))
-        )
+        const get = Effect.fn("BlobStorage.get")(function*(uri: BlobUri) {
+          const key = blobKeyFromUri(uri)
+          const data = yield* bucket.get(key)
+          if (data === null) {
+            return yield* Effect.fail(new BlobNotFound({ uri }))
+          }
 
-        if (!exists) {
-          return yield* new BlobNotFound({ uri })
-        }
+          return {
+            contentType: contentTypeFor(key),
+            data
+          }
+        })
+
+        const put = Effect.fn("BlobStorage.put")(function*(
+          data: Uint8Array,
+          contentType: string
+        ) {
+          const extension = extensionFor(contentType)
+          if (extension === undefined) {
+            return yield* Effect.fail(
+              new UnsupportedImageContentType({ contentType })
+            )
+          }
+
+          if (data.byteLength > maximumBytes) {
+            return yield* Effect.fail(
+              new BlobTooLarge({
+                actualBytes: data.byteLength,
+                maximumBytes
+              })
+            )
+          }
+
+          const digest = yield* sha256(data)
+          const key = `${digest}.${extension}` as BlobKey
+          if (!(yield* bucket.head(key))) {
+            yield* bucket.put(key, data)
+          }
+
+          return new StoredBlob({ uri: blobUriFromKey(key) })
+        })
+
+        return BlobStorage.of({ get, put, require })
       })
-
-      const get = Effect.fn("BlobStorage.get")(function*(uri: BlobUri) {
-        const key = blobKeyFromUri(uri)
-        yield* require(uri)
-
-        return {
-          contentType: contentTypeFor(key),
-          data: yield* fileSystem.readFile(path.join(root, key))
-        }
-      })
-
-      const put = Effect.fn("BlobStorage.put")(function*(
-        data: Uint8Array,
-        contentType: string
-      ) {
-        const extension = extensionFor(contentType)
-        if (extension === undefined) {
-          return yield* new UnsupportedImageContentType({ contentType })
-        }
-
-        if (data.byteLength > maximumBytes) {
-          return yield* new BlobTooLarge({
-            actualBytes: data.byteLength,
-            maximumBytes
-          })
-        }
-
-        const digest = createHash("sha256").update(data).digest("hex")
-        const key = `${digest}.${extension}` as BlobKey
-        const destination = path.join(root, key)
-
-        if (!(yield* fileSystem.exists(destination))) {
-          yield* fileSystem.writeFile(destination, data)
-        }
-
-        return new StoredBlob({ uri: blobUriFromKey(key) })
-      })
-
-      return { get, put, require }
-    })
-  ).pipe(Layer.provide([NodeFileSystem.layer, NodePath.layer]))
+    )
 }

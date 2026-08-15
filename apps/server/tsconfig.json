@@ -1,8 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"],
-    "lib": ["ESNext", "esnext.disposable"]
+    "types": ["node", "vitest/globals"],
+    "lib": ["ESNext", "esnext.disposable", "WebWorker"]
   },
-  "include": ["src"]
+  "include": ["alchemy.run.ts", "src", "stacks", "test"]
 }
