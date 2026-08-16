@@ -7,11 +7,10 @@ import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import type * as PlatformError from "effect/PlatformError"
 import * as Schema from "effect/Schema"
+import * as SqlClient from "effect/unstable/sql/SqlClient"
 import * as SqlError from "effect/unstable/sql/SqlError"
-import { BlobStorage } from "./blob-storage.ts"
-import { Database } from "./database.ts"
+import { BlobStorage, type BlobStorageUnavailable } from "./blob-storage.ts"
 
 const decodeRows = (rows: ReadonlyArray<unknown>) =>
   Schema.decodeUnknownEffect(Schema.Array(PostcardDesign))(rows)
@@ -26,7 +25,7 @@ export class PostcardDesigns extends Context.Service<
     readonly create: (input: CreatePostcardDesign) => Effect.Effect<
       PostcardDesign,
       | BlobNotFound
-      | PlatformError.PlatformError
+      | BlobStorageUnavailable
       | SqlError.SqlError
       | Schema.SchemaError
     >
@@ -35,11 +34,11 @@ export class PostcardDesigns extends Context.Service<
   static readonly layer = Layer.effect(
     PostcardDesigns,
     Effect.gen(function*() {
-      const database = yield* Database
+      const sql = yield* SqlClient.SqlClient
       const blobStorage = yield* BlobStorage
 
       const all = Effect.fn("PostcardDesigns.all")(function*() {
-        const rows = yield* database.sql`
+        const rows = yield* sql`
           SELECT
             id,
             name,
@@ -62,7 +61,7 @@ export class PostcardDesigns extends Context.Service<
         ])
 
         const createdAt = DateTime.formatIso(yield* DateTime.now)
-        const rows = yield* database.sql`
+        const rows = yield* sql`
           INSERT INTO postcard_designs (
             name,
             front_image_uri,

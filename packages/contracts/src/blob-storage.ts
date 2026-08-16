@@ -16,17 +16,17 @@ export class StoredBlob extends Schema.Class<StoredBlob>("StoredBlob")({
   uri: BlobUri
 }) {}
 
-export class BlobNotFound extends Schema.TaggedErrorClass<BlobNotFound>()(
+export class BlobNotFound extends Schema.TaggedError<BlobNotFound>()(
   "BlobNotFound",
   { uri: BlobUri }
 ) {}
 
-export class UnsupportedImageContentType extends Schema.TaggedErrorClass<UnsupportedImageContentType>()(
+export class UnsupportedImageContentType extends Schema.TaggedError<UnsupportedImageContentType>()(
   "UnsupportedImageContentType",
   { contentType: Schema.String }
 ) {}
 
-export class BlobTooLarge extends Schema.TaggedErrorClass<BlobTooLarge>()(
+export class BlobTooLarge extends Schema.TaggedError<BlobTooLarge>()(
   "BlobTooLarge",
   {
     actualBytes: Schema.Number,

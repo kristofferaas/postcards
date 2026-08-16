@@ -3,24 +3,34 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "data:reset": "node src/reset.ts",
     "data:seed": "node src/seed.ts",
-    "dev": "node --watch src/index.ts",
-    "start": "node src/index.ts"
+    "deploy": "alchemy deploy",
+    "dev": "alchemy dev",
+    "test": "node --test src/*.test.ts",
+    "test:integration": "ALCHEMY_DEV=true vitest run test/integ.test.ts",
+    "test:integration:live": "ALCHEMY_DEV=false INTEGRATION_LIVE=true vitest run test/integ.test.ts"
   },
   "dependencies": {
-    "@effect/platform-node": "4.0.0-beta.103",
-    "@effect/sql-sqlite-node": "4.0.0-beta.103",
+    "@effect/platform-node": "4.0.0-rc.109",
+    "@effect/sql-d1": "4.0.0-rc.109",
     "@post-cards/contracts": "workspace:*",
-    "effect": "4.0.0-beta.103"
+    "alchemy": "2.0.0-beta.72",
+    "effect": "4.0.0-rc.109"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10"
   }
 }

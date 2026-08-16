@@ -3,20 +3,19 @@ node_modules
 .DS_Store
 *.log
 *.tsbuildinfo
+.alchemy
 
 # Build output
 dist
 coverage
 
 # Environment files
-.env
-.env.local
+.env*
+!.env.example
+!.env.*.example
 
 # Expo
 .expo
 .expo-shared
 apps/mobile/android
 apps/mobile/ios
-
-# Local database
-apps/server/data

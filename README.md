@@ -2,61 +2,122 @@
 
 A pnpm and Turborepo monorepo containing:
 
-- `apps/server`: a Node.js HTTP server built with Effect v4
 - `apps/mobile`: an Expo React Native app
+- `apps/server`: the Effect API and its Alchemy v2 Cloudflare Stack
 
 ## Requirements
 
 - Node.js 22 or newer
 - pnpm 10.24.0
+- an Alchemy Cloudflare profile created by `alchemy login` or the first deploy
 
-## Get started
+## Install
 
 ```sh
 pnpm install
-pnpm dev
 ```
 
-Run one app at a time:
+## Local development
+
+Start the API Worker in Alchemy's local development runtime:
 
 ```sh
 pnpm dev:server
+```
+
+`alchemy dev` runs the Worker locally at `http://localhost:3000`, and the D1
+database and R2 bucket use Alchemy's local providers. Stack metadata uses the
+shared Cloudflare state store, while emulated resource data remains under the
+ignored `apps/server/.alchemy` directory.
+
+In another terminal, start the mobile app:
+
+```sh
 pnpm dev:mobile
 ```
 
-The server listens on `http://localhost:3000`. Its health check is available at
-`http://localhost:3000/health`.
+The mobile app uses `http://localhost:3000` on the iOS simulator and
+`http://10.0.2.2:3000` on the Android emulator by default. Set
+`EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to use a deployed Worker or a
+physical device.
 
-The server stores data in `apps/server/data/post-cards.sqlite` by default. Set
-`DATABASE_PATH` to use a different SQLite file.
+## Cloudflare resources
 
-Postcard images are stored in `apps/server/data/blobs` by default. Set
-`BLOB_STORAGE_PATH` to use a different directory and `BLOB_MAX_BYTES` to change
-the 20 MiB per-image limit.
+The Alchemy Stack owns:
 
-Reset the development data explicitly:
+- one R2 bucket for postcard images
+- one D1 database for postcard designs and sent postcards
+- one Worker that preserves `/health`, `/blobs/*`, and `/rpc`
+
+D1 migrations live in `apps/server/migrations` and are applied by Alchemy during
+deployment.
+
+Review and deploy the Stack from `apps/server`:
 
 ```sh
-pnpm db:seed
+pnpm alchemy plan
+pnpm alchemy deploy
 ```
 
-Seeding never runs during server startup and refuses to run when
-`NODE_ENV=production`.
-
-Upload an image by sending its bytes to `POST /blobs` with an image
-`Content-Type`. The response contains a stable `/blobs/...` URI. Postcard
-designs and sent postcards store those URIs rather than image bytes. Blob
-content is available by requesting the returned URI.
-
-The mobile app uses that address by default on the iOS simulator, and
-`http://10.0.2.2:3000` on the Android emulator. For a physical device, copy
-`apps/mobile/.env.example` to `apps/mobile/.env` and set
-`EXPO_PUBLIC_API_URL` to your computer's LAN address.
-
-## Commands
+After deployment, point the mobile app at the returned `workerUrl`. To seed the
+deployed API with the bundled development postcard fixture, pass that URL
+explicitly:
 
 ```sh
-pnpm build
+pnpm data:seed -- https://your-worker.workers.dev
+```
+
+The seed is idempotent. It uploads the fixture images through `POST /blobs` and
+creates the design and sent-postcard records through the existing RPC API.
+
+## API
+
+- `GET /health` returns service status.
+- `POST /blobs` stores image bytes with a supported image `Content-Type`.
+- `GET /blobs/:key` returns immutable image content.
+- `/rpc` serves the postcard Effect RPC group used by the mobile app.
+
+## Checks
+
+```sh
 pnpm check
+pnpm --filter @post-cards/server test
 pnpm lint
 ```
+
+Run the full Stack against Alchemy's local Worker, R2, and D1 emulators with:
+
+```sh
+pnpm --dir=apps/server test:integration
+```
+
+## GitHub Flow and deployments
+
+Development follows GitHub Flow: create a short-lived branch, open a pull
+request, and merge it into `main` after checks pass.
+
+The `Deploy` GitHub Actions workflow:
+
+- checks types, lint, and unit tests on pull requests and `main`
+- deploys same-repository pull requests to an isolated `pr-N` Cloudflare stage
+- posts or updates the preview Worker URL on the pull request
+- runs live Worker, R2, and D1 integration tests against each preview
+- destroys the preview when the pull request closes or becomes a draft
+- deploys `main` automatically to the `prod` stage and verifies production
+  health plus D1 reads
+
+Production R2 and D1 resources use Alchemy's retain removal policy. Preview
+data remains disposable and is removed with its preview Stack.
+
+CI credentials are managed by `apps/server/stacks/github.ts`. That Stack mints
+a scoped Cloudflare token, writes the token and account ID directly to GitHub
+Actions secrets, and creates a `production` GitHub environment restricted to
+`main`. It is deployed manually from a dedicated admin profile:
+
+```sh
+pnpm --dir=apps/server exec alchemy login --profile admin
+pnpm --dir=apps/server exec alchemy deploy stacks/github.ts --profile admin
+```
+
+Alchemy stores this login in its profile store. The application and workflow
+do not require Cloudflare credentials in local environment files.

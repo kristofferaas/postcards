@@ -16,6 +16,12 @@ const blobNotFoundResponse = (uri: string) =>
     { status: 404 }
   )
 
+const blobStorageUnavailableResponse = () =>
+  HttpServerResponse.jsonUnsafe(
+    { error: "BlobStorageUnavailable" },
+    { status: 500 }
+  )
+
 const RoutesLive = HttpRouter.use((router) =>
   Effect.gen(function*() {
     const blobStorage = yield* BlobStorage
@@ -65,6 +71,9 @@ const RoutesLive = HttpRouter.use((router) =>
               { status: 413 }
             )
           )
+        ),
+        Effect.catchTag("BlobStorageUnavailable", () =>
+          Effect.succeed(blobStorageUnavailableResponse())
         )
       )
     )
@@ -88,6 +97,9 @@ const RoutesLive = HttpRouter.use((router) =>
       }).pipe(
         Effect.catchTag("BlobNotFound", (error) =>
           Effect.succeed(blobNotFoundResponse(error.uri))
+        ),
+        Effect.catchTag("BlobStorageUnavailable", () =>
+          Effect.succeed(blobStorageUnavailableResponse())
         )
       )
     )
