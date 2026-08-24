@@ -9,14 +9,12 @@ The checked-in workflow is based on Expo's generated production deployment templ
 1. A push to `main` starts `.github/workflows/deploy.yml`.
 2. GitHub runs the repository checks.
 3. GitHub deploys and tests the production Cloudflare backend.
-4. After that succeeds, GitHub advances the `eas-production` branch to the verified commit.
-5. Expo's GitHub App starts `.eas/workflows/deploy.yml` for mobile-related changes.
+4. After that succeeds, GitHub checks whether the verified commit changed the mobile app or a shared dependency.
+5. For mobile-related changes, GitHub authenticates with the `EXPO_TOKEN` repository secret and starts `.eas/workflows/deploy.yml` at the exact verified commit. GitHub waits for the EAS workflow to finish.
 6. Expo Fingerprint checks for a compatible production iOS build.
 7. If one exists, EAS publishes an update on the `production` branch. If none exists, EAS builds iOS and submits it to App Store Connect.
 
-The `eas-production` branch is a deployment ref managed by GitHub Actions. Do not commit to it directly.
-
-EAS cancels an older run when a newer verified commit reaches this branch. This prevents an older OTA bundle from finishing after a newer one and becoming the latest production update.
+EAS cancels an older production-mobile run when a newer verified commit starts. This prevents an older OTA bundle from finishing after a newer one and becoming the latest production update.
 
 ## Native build submission recovery
 
