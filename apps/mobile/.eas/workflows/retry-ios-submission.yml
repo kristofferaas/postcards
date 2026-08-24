@@ -1,0 +1,20 @@
+# Retry an App Store Connect submission for an existing successful EAS build.
+# Run with:
+# eas workflow:run .eas/workflows/retry-ios-submission.yml -F build_id=<eas-build-id>
+
+name: Retry iOS submission
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        type: string
+        required: true
+        description: ID of the successful EAS iOS build to submit
+
+jobs:
+  submit_ios_build:
+    name: Submit iOS Build
+    type: submit
+    params:
+      build_id: ${{ inputs.build_id }}
