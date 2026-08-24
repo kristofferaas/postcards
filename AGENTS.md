@@ -26,3 +26,7 @@ This project vendors external repositories under @repos/
 ## Effect
 
 When writing Effect code, inspect @repos/effect/ for examples of idiomatic usage, tests, module structure, and API design. Treat it as the source of truth for Effect patterns.
+
+## Alchemy
+
+When writing Alchemy v2 code, inspect @repos/alchemy/ for examples of idiomatic usage, tests, module structure, and API design. Treat it as the source of truth for Alchemy patterns.
