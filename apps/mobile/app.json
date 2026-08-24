@@ -22,7 +22,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.kristofferaas.postcards"
     },
     "plugins": [
       "expo-router",
@@ -58,6 +59,12 @@
       "eas": {
         "projectId": "75ff315f-b4ff-46af-a9eb-73e63e92cdef"
       }
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/75ff315f-b4ff-46af-a9eb-73e63e92cdef"
     }
   }
 }

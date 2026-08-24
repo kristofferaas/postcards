@@ -87,6 +87,17 @@ jobs:
       - name: Deploy and test production
         run: pnpm --dir=apps/server test:integration:live
 
+  mobile:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Release verified commit to EAS
+        run: git push origin "$GITHUB_SHA:refs/heads/eas-production"
+
   cleanup:
     if: >-
       github.event_name == 'pull_request' &&
