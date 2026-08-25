@@ -24,6 +24,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { usePostcards } from '@/state/postcards';
+import { authClient } from '@/api/auth';
 
 const MAX_CARD_WIDTH = 560;
 const DECK_STRIDE_RATIO = 0.72;
@@ -118,6 +119,23 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <Pressable
+        accessibilityHint="Signs out of Post Cards"
+        accessibilityLabel="Sign out"
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={() => authClient.signOut()}
+        style={({ pressed }) => [
+          styles.accountButton,
+          { top: insets.top + Spacing.two },
+          pressed && styles.pressed,
+        ]}>
+        <SymbolView
+          name={{ ios: 'person.crop.circle.badge.xmark', android: 'logout' }}
+          size={28}
+          tintColor={theme.text}
+        />
+      </Pressable>
       <Animated.FlatList
         ListEmptyComponent={emptyState}
         contentContainerStyle={[
@@ -173,6 +191,18 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  accountButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(127, 127, 127, 0.16)',
+    borderCurve: 'continuous',
+    borderRadius: 22,
+    height: 44,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: Spacing.three,
+    width: 44,
+    zIndex: 20,
   },
   listContent: {
     alignItems: 'center',

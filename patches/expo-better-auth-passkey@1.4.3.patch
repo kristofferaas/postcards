@@ -1,0 +1,32 @@
+diff --git a/build/plugin.js b/build/plugin.js
+index 34ae122f891ef36941102e3bc8c2b4f0c05cf9c1..39ea965994e8687d8a0d18627017bce597da76ea 100644
+--- a/build/plugin.js
++++ b/build/plugin.js
+@@ -75,6 +75,7 @@ export const getPasskeyActionsNative = ($fetch, { $listPasskeys, $store, }) => {
+                     authenticatorAttachment: opts.authenticatorAttachment,
+                 }),
+                 ...(opts?.name && { name: opts.name }),
++                ...(opts?.context && { context: opts.context }),
+             },
+         });
+         if (!optionsRes.data)
+diff --git a/src/plugin.ts b/src/plugin.ts
+index 433e4523aa5bffdb7e67f1e50ff87ebaf89f2209..4f71044d2e5d225ea80f2b95b8fefa1bc5a0bf1f 100644
+--- a/src/plugin.ts
++++ b/src/plugin.ts
+@@ -107,6 +107,7 @@ export const getPasskeyActionsNative = (
+       fetchOptions?: BetterFetchOption;
+       name?: string;
+       authenticatorAttachment?: "platform" | "cross-platform";
++      context?: string;
+       useAutoRegister?: boolean;
+     },
+     fetchOpts?: BetterFetchOption,
+@@ -120,6 +121,7 @@ export const getPasskeyActionsNative = (
+             authenticatorAttachment: opts.authenticatorAttachment,
+           }),
+           ...(opts?.name && { name: opts.name }),
++          ...(opts?.context && { context: opts.context }),
+         },
+       },
+     );

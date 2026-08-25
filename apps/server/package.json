@@ -22,11 +22,17 @@
     "test:integration:live": "ALCHEMY_DEV=false INTEGRATION_LIVE=true vitest run test/integ.test.ts"
   },
   "dependencies": {
+    "@alchemy.run/better-auth": "2.0.0-beta.72",
+    "@better-auth/expo": "1.6.29",
+    "@better-auth/passkey": "1.6.29",
+    "@better-auth/utils": "0.4.2",
     "@effect/platform-node": "4.0.0-rc.109",
     "@effect/sql-d1": "4.0.0-rc.109",
     "@post-cards/contracts": "workspace:*",
     "alchemy": "2.0.0-beta.72",
-    "effect": "4.0.0-rc.109"
+    "better-auth": "1.6.29",
+    "effect": "4.0.0-rc.109",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

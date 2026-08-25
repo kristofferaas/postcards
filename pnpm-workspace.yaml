@@ -3,6 +3,9 @@ packages:
   - packages/*
 
 onlyBuiltDependencies:
-  - "@shopify/react-native-skia"
+  - '@shopify/react-native-skia'
   - sharp
   - unrs-resolver
+
+patchedDependencies:
+  expo-better-auth-passkey@1.4.3: patches/expo-better-auth-passkey@1.4.3.patch

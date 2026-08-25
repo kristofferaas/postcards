@@ -9,18 +9,17 @@ import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
 import { fetch } from 'expo/fetch';
 import * as FetchHttpClient from 'effect/unstable/http/FetchHttpClient';
+import * as HttpClient from 'effect/unstable/http/HttpClient';
+import * as HttpClientRequest from 'effect/unstable/http/HttpClientRequest';
 import * as RpcClient from 'effect/unstable/rpc/RpcClient';
 import * as RpcSerialization from 'effect/unstable/rpc/RpcSerialization';
-import { Platform } from 'react-native';
+
+import { authClient } from './auth';
+import { apiUrl } from './config';
 
 export type Postcard = SentPostcard;
 
-const defaultApiUrl =
-  Platform.OS === 'android'
-    ? 'http://10.0.2.2:3000'
-    : 'http://localhost:3000';
-
-export const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? defaultApiUrl;
+export { apiUrl } from './config';
 
 const fetchHttpClientLayer = FetchHttpClient.layer.pipe(
   Layer.provide(Layer.succeed(FetchHttpClient.Fetch, fetch)),
@@ -28,6 +27,13 @@ const fetchHttpClientLayer = FetchHttpClient.layer.pipe(
 
 const rpcProtocolLayer = RpcClient.layerProtocolHttp({
   url: new URL('/rpc', apiUrl).toString(),
+  transformClient: (client) =>
+    HttpClient.mapRequest(client, (request) => {
+      const cookie = authClient.getCookie();
+      return cookie.length > 0
+        ? HttpClientRequest.setHeader(request, 'cookie', cookie)
+        : request;
+    }),
 }).pipe(
   Layer.provide([fetchHttpClientLayer, RpcSerialization.layerJson]),
 );

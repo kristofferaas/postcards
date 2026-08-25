@@ -41,6 +41,11 @@ The mobile app uses `http://localhost:3000` on the iOS simulator and
 `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to use a deployed Worker or a
 physical device.
 
+Passkeys use the API hostname as their relying-party ID. Set
+`EXPO_PUBLIC_PASSKEY_RP_ID` only when the relying-party ID differs from that
+hostname. Local iOS builds use Apple's `localhost` associated-domain developer
+mode.
+
 ## Cloudflare resources
 
 The Alchemy Stack owns:
@@ -60,11 +65,12 @@ pnpm alchemy deploy
 ```
 
 After deployment, point the mobile app at the returned `workerUrl`. To seed the
-deployed API with the bundled development postcard fixture, pass that URL
-explicitly:
+deployed API with the bundled development postcard fixture, pass that URL and
+an authenticated Better Auth cookie explicitly:
 
 ```sh
-pnpm data:seed -- https://your-worker.workers.dev
+POSTCARDS_SESSION_COOKIE='better-auth.session_token=...' \
+  pnpm data:seed -- https://your-worker.workers.dev
 ```
 
 The seed is idempotent. It uploads the fixture images through `POST /blobs` and
@@ -73,9 +79,32 @@ creates the design and sent-postcard records through the existing RPC API.
 ## API
 
 - `GET /health` returns service status.
+- `GET /.well-known/apple-app-site-association` associates the iOS app with
+  the passkey relying-party domain.
+- `/api/auth/*` serves passkey registration, authentication, and sessions.
 - `POST /blobs` stores image bytes with a supported image `Content-Type`.
 - `GET /blobs/:key` returns immutable image content.
 - `/rpc` serves the postcard Effect RPC group used by the mobile app.
+
+`POST /blobs` and `/rpc` require a Better Auth session. Sent postcards are
+scoped to the authenticated user.
+
+## Passkey deployment configuration
+
+The Apple Developer Team ID is committed as project metadata. The Worker
+returns `8ZJAHCVAGF.com.kristofferaas.postcards` from the AASA endpoint.
+
+The EAS `production` environment also needs:
+
+- `EXPO_PUBLIC_API_URL`: the production Worker URL.
+- `EXPO_PUBLIC_PASSKEY_RP_ID`: optional when it is the same as the API
+  hostname.
+
+Verify the deployed response with:
+
+```sh
+curl https://your-worker.workers.dev/.well-known/apple-app-site-association
+```
 
 ## Checks
 
@@ -90,6 +119,25 @@ Run the full Stack against Alchemy's local Worker, R2, and D1 emulators with:
 ```sh
 pnpm --dir=apps/server test:integration
 ```
+
+The tracked iOS passkey UI test can be added to a generated native project
+after `expo prebuild`:
+
+```sh
+pnpm --filter @post-cards/mobile test:ios:passkey:configure
+```
+
+Start Expo with an HTTPS Worker whose hostname matches the generated app's
+web-credentials entitlement, then run:
+
+```sh
+EXPO_PUBLIC_API_URL=https://your-worker.workers.dev \
+  pnpm --filter @post-cards/mobile test:ios:passkey
+```
+
+Set `IOS_SIMULATOR_ID` to choose a simulator; otherwise the command uses the
+booted device. It supplies matching Face ID events and covers registration,
+sign-out, and passkey sign-in.
 
 ## GitHub Flow and deployments
 
