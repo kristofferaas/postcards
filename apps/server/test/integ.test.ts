@@ -103,21 +103,24 @@ test(
     const image = new Uint8Array([
       0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
     ])
+    // Alchemy exposes infrastructure transport failures as unknown.
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
     const upload = yield* Test.executeWhenReady(
       HttpClientRequest.post(new URL("/blobs", workerUrl).toString()).pipe(
         HttpClientRequest.setBody(
           HttpBody.uint8Array(image, "image/png")
         )
       )
-    )
+    ).pipe(Effect.orDie)
 
     expect(upload.status).toBe(401)
 
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
     const rpc = yield* Test.executeWhenReady(
       HttpClientRequest.post(new URL("/rpc", workerUrl).toString()).pipe(
         HttpClientRequest.setBody(HttpBody.jsonUnsafe({}))
       )
-    )
+    ).pipe(Effect.orDie)
     expect(rpc.status).toBe(401)
   })
 )
@@ -129,6 +132,7 @@ test(
     const workerOrigin = workerUrl!
     const usersBefore =
       stage === "prod" ? undefined : yield* authUserCount(workerOrigin)
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
     const start = yield* Test.executeWhenReady(
       HttpClientRequest.post(
         new URL(
@@ -140,7 +144,7 @@ test(
           HttpBody.jsonUnsafe({ name: "Integration Test" })
         )
       )
-    )
+    ).pipe(Effect.orDie)
     expect(start.status).toBe(200)
 
     const { context } = (yield* start.json) as { context: string }
@@ -152,9 +156,10 @@ test(
     )
     optionsUrl.searchParams.set("context", context)
     optionsUrl.searchParams.set("name", "Primary passkey")
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
     const options = yield* Test.executeWhenReady(
       HttpClientRequest.get(optionsUrl.toString())
-    )
+    ).pipe(Effect.orDie)
 
     expect(options.status).toBe(200)
     expect(options.headers["set-cookie"]).toContain(
@@ -168,6 +173,7 @@ test(
       user: { displayName: "Integration Test" }
     })
 
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
     const prematureCompletion = yield* Test.executeWhenReady(
       HttpClientRequest.post(
         new URL(
@@ -179,7 +185,7 @@ test(
           HttpBody.jsonUnsafe({ context })
         )
       )
-    )
+    ).pipe(Effect.orDie)
     expect(prematureCompletion.status).toBe(400)
 
     if (usersBefore !== undefined) {

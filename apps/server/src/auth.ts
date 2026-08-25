@@ -1,8 +1,12 @@
 import { expo } from "@better-auth/expo"
 import { passkey } from "@better-auth/passkey"
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto"
 import type { BetterAuthPlugin } from "better-auth"
 import { APIError, createAuthEndpoint } from "better-auth/api"
 import { setSessionCookie } from "better-auth/cookies"
+import * as Crypto from "effect/Crypto"
+import * as DateTime from "effect/DateTime"
+import * as Effect from "effect/Effect"
 import * as z from "zod"
 
 const REGISTRATION_INTENT_PREFIX = "passkey-registration:"
@@ -11,6 +15,21 @@ const REGISTRATION_INTENT_TTL_MS = 5 * 60 * 1_000
 const REGISTRATION_COMPLETION_TTL_MS = 60 * 1_000
 const IOS_BUNDLE_IDENTIFIER = "com.kristofferaas.postcards"
 export const APPLE_TEAM_ID = "8ZJAHCVAGF"
+
+const randomUuid = Effect.gen(function*() {
+  const crypto = yield* Crypto.Crypto
+  return yield* crypto.randomUUIDv4
+}).pipe(Effect.provide(NodeCrypto.layer), Effect.orDie)
+
+const makeRandomUuid = () => Effect.runPromise(randomUuid)
+
+const expirationDate = (ttlMillis: number) =>
+  Effect.runPromise(
+    DateTime.now.pipe(
+      Effect.map(DateTime.addDuration(ttlMillis)),
+      Effect.map(DateTime.toDateUtc)
+    )
+  )
 
 const requireAuthTestMode = () => {
   if (process.env.AUTH_TEST_MODE !== "true") {
@@ -39,16 +58,16 @@ const passkeyRegistration = () => ({
         body: startRegistrationBody
       },
       async (ctx) => {
-        const token = crypto.randomUUID()
+        const token = await makeRandomUuid()
         const pendingUser = {
-          id: crypto.randomUUID(),
+          id: await makeRandomUuid(),
           name: ctx.body.name
         }
 
         await ctx.context.internalAdapter.createVerificationValue({
           identifier: `${REGISTRATION_INTENT_PREFIX}${token}`,
           value: JSON.stringify(pendingUser),
-          expiresAt: new Date(Date.now() + REGISTRATION_INTENT_TTL_MS)
+          expiresAt: await expirationDate(REGISTRATION_INTENT_TTL_MS)
         })
 
         return ctx.json({ context: token })
@@ -115,7 +134,7 @@ const authTestSupport = () => ({
       async (ctx) => {
         requireAuthTestMode()
         const user = await ctx.context.internalAdapter.createUser({
-          email: `integration-${crypto.randomUUID()}@postcards.invalid`,
+          email: `integration-${await makeRandomUuid()}@postcards.invalid`,
           emailVerified: false,
           name: ctx.body.name ?? "Integration Test"
         })
@@ -210,7 +229,7 @@ export const authOptions = {
           const databaseUser =
             await ctx.context.internalAdapter.createUser({
               id: user.id,
-              email: `passkey-${crypto.randomUUID()}@postcards.invalid`,
+              email: `passkey-${await makeRandomUuid()}@postcards.invalid`,
               emailVerified: false,
               name: user.name
             })
@@ -225,8 +244,8 @@ export const authOptions = {
           await ctx.context.internalAdapter.createVerificationValue({
             identifier: `${REGISTRATION_COMPLETION_PREFIX}${context}`,
             value: databaseUser.id,
-            expiresAt: new Date(
-              Date.now() + REGISTRATION_COMPLETION_TTL_MS
+            expiresAt: await expirationDate(
+              REGISTRATION_COMPLETION_TTL_MS
             )
           })
 
