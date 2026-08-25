@@ -1,6 +1,6 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-const DEVELOPMENT_APPLE_TEAM_ID = 'FAKETEAMID';
+const APPLE_TEAM_ID = '8ZJAHCVAGF';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const apiUrl = new URL(
@@ -12,14 +12,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     relyingPartyId === 'localhost'
       ? 'webcredentials:localhost?mode=developer'
       : `webcredentials:${relyingPartyId}`;
-  const configuredAppleTeamId = process.env.APPLE_TEAM_ID?.trim();
-
-  if (process.env.EAS_BUILD_PROFILE === 'production' && !configuredAppleTeamId) {
-    throw new Error('APPLE_TEAM_ID is required for production builds.');
-  }
-
-  const appleTeamId = configuredAppleTeamId || DEVELOPMENT_APPLE_TEAM_ID;
-
   return {
     ...config,
     name: config.name ?? 'Post Cards',
@@ -27,7 +19,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       ...config.ios,
       associatedDomains: [associatedDomain],
-      appleTeamId,
+      appleTeamId: APPLE_TEAM_ID,
     },
   };
 };

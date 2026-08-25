@@ -81,8 +81,6 @@ creates the design and sent-postcard records through the existing RPC API.
 - `GET /health` returns service status.
 - `GET /.well-known/apple-app-site-association` associates the iOS app with
   the passkey relying-party domain.
-- `GET /.well-known/assetlinks.json` associates signed Android builds with the
-  same domain.
 - `/api/auth/*` serves passkey registration, authentication, and sessions.
 - `POST /blobs` stores image bytes with a supported image `Content-Type`.
 - `GET /blobs/:key` returns immutable image content.
@@ -93,30 +91,19 @@ scoped to the authenticated user.
 
 ## Passkey deployment configuration
 
-Production deploys require these GitHub Actions repository or environment
-variables:
-
-- `APPLE_TEAM_ID`: the ten-character Apple Developer Team ID. The Worker uses
-  it to return `<TeamID>.com.kristofferaas.postcards` from the AASA endpoint.
-- `ANDROID_CERT_FINGERPRINTS`: one or more SHA-256 signing-certificate
-  fingerprints separated by commas. Include every certificate that may sign
-  an installed build, such as EAS and Google Play App Signing certificates.
+The Apple Developer Team ID is committed as project metadata. The Worker
+returns `8ZJAHCVAGF.com.kristofferaas.postcards` from the AASA endpoint.
 
 The EAS `production` environment also needs:
 
 - `EXPO_PUBLIC_API_URL`: the production Worker URL.
-- `APPLE_TEAM_ID`: the same Apple Developer Team ID.
 - `EXPO_PUBLIC_PASSKEY_RP_ID`: optional when it is the same as the API
   hostname.
 
-The Worker refuses a production deploy when either platform association value
-is missing. Non-production builds use `FAKETEAMID` when no Apple Team ID is
-provided, which keeps simulator-only native projects configurable. Verify the
-deployed responses with:
+Verify the deployed response with:
 
 ```sh
 curl https://your-worker.workers.dev/.well-known/apple-app-site-association
-curl https://your-worker.workers.dev/.well-known/assetlinks.json
 ```
 
 ## Checks

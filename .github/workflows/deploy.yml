@@ -50,8 +50,6 @@ jobs:
       STAGE: pr-${{ github.event.number }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
-      ANDROID_CERT_FINGERPRINTS: ${{ vars.ANDROID_CERT_FINGERPRINTS }}
       PULL_REQUEST: ${{ github.event.number }}
       GITHUB_SHA: ${{ github.sha }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,8 +75,6 @@ jobs:
       STAGE: prod
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
-      ANDROID_CERT_FINGERPRINTS: ${{ vars.ANDROID_CERT_FINGERPRINTS }}
       GITHUB_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

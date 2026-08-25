@@ -16,10 +16,7 @@ import * as RpcClient from "effect/unstable/rpc/RpcClient"
 import * as RpcSerialization from "effect/unstable/rpc/RpcSerialization"
 import { expect } from "vitest"
 import Stack from "../alchemy.run.ts"
-import {
-  ANDROID_PACKAGE_NAME,
-  DEVELOPMENT_APPLE_TEAM_ID
-} from "../src/auth.ts"
+import { APPLE_TEAM_ID } from "../src/auth.ts"
 
 const live = process.env.INTEGRATION_LIVE === "true"
 const stage = process.env.STAGE ?? (live ? "test" : "local")
@@ -92,47 +89,10 @@ test(
     expect(yield* response.json).toEqual({
       webcredentials: {
         apps: [
-          `${process.env.APPLE_TEAM_ID?.trim() || DEVELOPMENT_APPLE_TEAM_ID}.com.kristofferaas.postcards`
+          `${APPLE_TEAM_ID}.com.kristofferaas.postcards`
         ]
       }
     })
-  })
-)
-
-test(
-  "serves the Android passkey association",
-  Effect.gen(function*() {
-    const { workerUrl } = yield* stack
-    const response = yield* HttpClient.get(
-      new URL("/.well-known/assetlinks.json", workerUrl).toString()
-    )
-
-    expect(response.status).toBe(200)
-    const assetLinks = (yield* response.json) as Array<{
-      relation: Array<string>
-      target: {
-        namespace: string
-        package_name: string
-        sha256_cert_fingerprints: Array<string>
-      }
-    }>
-    expect(assetLinks.length).toBeGreaterThan(0)
-    expect(assetLinks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          relation: ["delegate_permission/common.get_login_creds"],
-          target: {
-            namespace: "android_app",
-            package_name: ANDROID_PACKAGE_NAME,
-            sha256_cert_fingerprints: [
-              expect.stringMatching(
-                /^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/
-              )
-            ]
-          }
-        })
-      ])
-    )
   })
 )
 

@@ -8,12 +8,7 @@ import * as HttpRouter from "effect/unstable/http/HttpRouter"
 import * as HttpServerRequest from "effect/unstable/http/HttpServerRequest"
 import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse"
 import { ApiLive } from "../app.ts"
-import {
-  DEVELOPMENT_APPLE_TEAM_ID,
-  androidAssetLinks,
-  appleAppId,
-  authOptions
-} from "../auth.ts"
+import { appleAppId, authOptions } from "../auth.ts"
 import {
   BlobStorage,
   BlobStorageUnavailable
@@ -28,23 +23,6 @@ const authTestMode =
   !isProduction &&
   (process.env.ALCHEMY_DEV === "true" ||
     process.env.INTEGRATION_LIVE === "true")
-const testAndroidCertFingerprint = Array.from(
-  { length: 32 },
-  () => "00"
-).join(":")
-
-if (isProduction && !process.env.APPLE_TEAM_ID?.trim()) {
-  throw new Error("APPLE_TEAM_ID is required for production deploys.")
-}
-
-if (
-  isProduction &&
-  !process.env.ANDROID_CERT_FINGERPRINTS?.trim()
-) {
-  throw new Error(
-    "ANDROID_CERT_FINGERPRINTS is required for production deploys."
-  )
-}
 
 const unavailable = (cause: unknown) =>
   new BlobStorageUnavailable({
@@ -60,11 +38,6 @@ export default Cloudflare.Worker(
     compatibility: { flags: ["nodejs_compat"] },
     env: {
       PUBLIC_URL: Cloudflare.Worker.URL,
-      APPLE_TEAM_ID:
-        process.env.APPLE_TEAM_ID?.trim() || DEVELOPMENT_APPLE_TEAM_ID,
-      ANDROID_CERT_FINGERPRINTS:
-        process.env.ANDROID_CERT_FINGERPRINTS?.trim() ||
-        (authTestMode ? testAndroidCertFingerprint : ""),
       AUTH_TEST_MODE: authTestMode ? "true" : "false"
     }
   },
@@ -88,19 +61,6 @@ export default Cloudflare.Worker(
               headers: { "cache-control": "public, max-age=3600" }
             }
           )
-        }
-
-        if (pathname === "/.well-known/assetlinks.json") {
-          if (androidAssetLinks.length === 0) {
-            return HttpServerResponse.jsonUnsafe(
-              { error: "AndroidAppAssociationNotConfigured" },
-              { status: 503 }
-            )
-          }
-
-          return HttpServerResponse.jsonUnsafe(androidAssetLinks, {
-            headers: { "cache-control": "public, max-age=3600" }
-          })
         }
 
         if (pathname.startsWith("/api/auth")) {

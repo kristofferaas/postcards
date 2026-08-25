@@ -10,8 +10,7 @@ const REGISTRATION_COMPLETION_PREFIX = "passkey-registration-complete:"
 const REGISTRATION_INTENT_TTL_MS = 5 * 60 * 1_000
 const REGISTRATION_COMPLETION_TTL_MS = 60 * 1_000
 const IOS_BUNDLE_IDENTIFIER = "com.kristofferaas.postcards"
-export const ANDROID_PACKAGE_NAME = "com.kristofferaas.postcards"
-export const DEVELOPMENT_APPLE_TEAM_ID = "FAKETEAMID"
+export const APPLE_TEAM_ID = "8ZJAHCVAGF"
 
 const requireAuthTestMode = () => {
   if (process.env.AUTH_TEST_MODE !== "true") {
@@ -148,38 +147,7 @@ const relyingPartyId =
 const relyingPartyOrigin =
   process.env.PASSKEY_ORIGIN ?? `https://${relyingPartyId}`
 
-export const appleTeamId =
-  process.env.APPLE_TEAM_ID?.trim() || DEVELOPMENT_APPLE_TEAM_ID
-export const appleAppId = `${appleTeamId}.${IOS_BUNDLE_IDENTIFIER}`
-
-const androidFingerprintPattern =
-  /^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/
-
-export const androidCertFingerprints = (
-  process.env.ANDROID_CERT_FINGERPRINTS?.trim() || ""
-)
-  .split(",")
-  .map((fingerprint) => fingerprint.trim().toUpperCase())
-  .filter((fingerprint) => fingerprint.length > 0)
-  .map((fingerprint) => {
-    if (!androidFingerprintPattern.test(fingerprint)) {
-      throw new Error(
-        `Invalid Android SHA-256 certificate fingerprint: ${fingerprint}`
-      )
-    }
-    return fingerprint
-  })
-
-export const androidAssetLinks = androidCertFingerprints.map(
-  (fingerprint) => ({
-    relation: ["delegate_permission/common.get_login_creds"],
-    target: {
-      namespace: "android_app",
-      package_name: ANDROID_PACKAGE_NAME,
-      sha256_cert_fingerprints: [fingerprint]
-    }
-  })
-)
+export const appleAppId = `${APPLE_TEAM_ID}.${IOS_BUNDLE_IDENTIFIER}`
 
 export const authOptions = {
   baseURL: {
