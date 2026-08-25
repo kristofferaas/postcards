@@ -18,11 +18,11 @@ const decodeRows = (rows: ReadonlyArray<unknown>) =>
 export class SentPostcards extends Context.Service<
   SentPostcards,
   {
-    readonly all: () => Effect.Effect<
+    readonly all: (userId: string) => Effect.Effect<
       ReadonlyArray<SentPostcard>,
       SqlError.SqlError | Schema.SchemaError
     >
-    readonly send: (input: SendPostcard) => Effect.Effect<
+    readonly send: (userId: string, input: SendPostcard) => Effect.Effect<
       SentPostcard,
       | BlobNotFound
       | BlobStorageUnavailable
@@ -37,7 +37,7 @@ export class SentPostcards extends Context.Service<
       const sql = yield* SqlClient.SqlClient
       const blobStorage = yield* BlobStorage
 
-      const all = Effect.fn("SentPostcards.all")(function*() {
+      const all = Effect.fn("SentPostcards.all")(function*(userId: string) {
         const rows = yield* sql`
           SELECT
             id,
@@ -47,6 +47,7 @@ export class SentPostcards extends Context.Service<
             sent_at AS "sentAt",
             opened_at AS "openedAt"
           FROM sent_postcards
+          WHERE user_id = ${userId}
           ORDER BY sent_at DESC, id DESC
         `
 
@@ -54,6 +55,7 @@ export class SentPostcards extends Context.Service<
       })
 
       const send = Effect.fn("SentPostcards.send")(function*(
+        userId: string,
         input: SendPostcard
       ) {
         yield* Effect.all([
@@ -65,6 +67,7 @@ export class SentPostcards extends Context.Service<
         const rows = yield* sql`
           INSERT INTO sent_postcards (
             postcard_design_id,
+            user_id,
             front_image_uri,
             back_image_uri,
             sent_at,
@@ -72,6 +75,7 @@ export class SentPostcards extends Context.Service<
           )
           VALUES (
             ${input.postcardDesignId},
+            ${userId},
             ${input.frontImageUri},
             ${input.backImageUri},
             ${sentAt},

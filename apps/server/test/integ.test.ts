@@ -11,10 +11,15 @@ import * as Layer from "effect/Layer"
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient"
 import * as HttpBody from "effect/unstable/http/HttpBody"
 import * as HttpClient from "effect/unstable/http/HttpClient"
+import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest"
 import * as RpcClient from "effect/unstable/rpc/RpcClient"
 import * as RpcSerialization from "effect/unstable/rpc/RpcSerialization"
 import { expect } from "vitest"
 import Stack from "../alchemy.run.ts"
+import {
+  ANDROID_PACKAGE_NAME,
+  DEVELOPMENT_APPLE_TEAM_ID
+} from "../src/auth.ts"
 
 const live = process.env.INTEGRATION_LIVE === "true"
 const stage = process.env.STAGE ?? (live ? "test" : "local")
@@ -30,6 +35,31 @@ const { beforeAll, deploy, test } = Test.make({
 })
 
 const stack = beforeAll(deploy(Stack))
+
+const sessionCookie = Effect.fn("Integration.sessionCookie")(
+  function*(workerUrl: string) {
+    const response = yield* HttpClient.post(
+      new URL("/api/auth/auth-test/session", workerUrl).toString(),
+      { body: HttpBody.jsonUnsafe({ name: "Integration Test" }) }
+    )
+    expect(response.status).toBe(200)
+
+    const cookie = response.headers["set-cookie"]?.split(";")[0]
+    expect(cookie).toBeTruthy()
+    return cookie!
+  }
+)
+
+const authUserCount = Effect.fn("Integration.authUserCount")(
+  function*(workerUrl: string) {
+    const response = yield* HttpClient.get(
+      new URL("/api/auth/auth-test/user-count", workerUrl).toString()
+    )
+    expect(response.status).toBe(200)
+    const payload = (yield* response.json) as { count: number }
+    return payload.count
+  }
+)
 
 test(
   "serves the health endpoint",
@@ -47,16 +77,175 @@ test(
   })
 )
 
-test.skipIf(stage === "prod")(
-  "round-trips an image through R2",
+test(
+  "serves the Apple passkey association",
+  Effect.gen(function*() {
+    const { workerUrl } = yield* stack
+    const response = yield* HttpClient.get(
+      new URL(
+        "/.well-known/apple-app-site-association",
+        workerUrl
+      ).toString()
+    )
+
+    expect(response.status).toBe(200)
+    expect(yield* response.json).toEqual({
+      webcredentials: {
+        apps: [
+          `${process.env.APPLE_TEAM_ID?.trim() || DEVELOPMENT_APPLE_TEAM_ID}.com.kristofferaas.postcards`
+        ]
+      }
+    })
+  })
+)
+
+test(
+  "serves the Android passkey association",
+  Effect.gen(function*() {
+    const { workerUrl } = yield* stack
+    const response = yield* HttpClient.get(
+      new URL("/.well-known/assetlinks.json", workerUrl).toString()
+    )
+
+    expect(response.status).toBe(200)
+    const assetLinks = (yield* response.json) as Array<{
+      relation: Array<string>
+      target: {
+        namespace: string
+        package_name: string
+        sha256_cert_fingerprints: Array<string>
+      }
+    }>
+    expect(assetLinks.length).toBeGreaterThan(0)
+    expect(assetLinks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          relation: ["delegate_permission/common.get_login_creds"],
+          target: {
+            namespace: "android_app",
+            package_name: ANDROID_PACKAGE_NAME,
+            sha256_cert_fingerprints: [
+              expect.stringMatching(
+                /^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/
+              )
+            ]
+          }
+        })
+      ])
+    )
+  })
+)
+
+test(
+  "rejects protected API requests without a session",
   Effect.gen(function*() {
     const { workerUrl } = yield* stack
     const image = new Uint8Array([
       0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
     ])
-    const upload = yield* HttpClient.post(
-      new URL("/blobs", workerUrl).toString(),
-      { body: HttpBody.uint8Array(image, "image/png") }
+    const upload = yield* Test.executeWhenReady(
+      HttpClientRequest.post(new URL("/blobs", workerUrl).toString()).pipe(
+        HttpClientRequest.setBody(
+          HttpBody.uint8Array(image, "image/png")
+        )
+      )
+    )
+
+    expect(upload.status).toBe(401)
+
+    const rpc = yield* Test.executeWhenReady(
+      HttpClientRequest.post(new URL("/rpc", workerUrl).toString()).pipe(
+        HttpClientRequest.setBody(HttpBody.jsonUnsafe({}))
+      )
+    )
+    expect(rpc.status).toBe(401)
+  })
+)
+
+test(
+  "starts a passwordless passkey registration ceremony",
+  Effect.gen(function*() {
+    const { workerUrl } = yield* stack
+    const workerOrigin = workerUrl!
+    const usersBefore =
+      stage === "prod" ? undefined : yield* authUserCount(workerOrigin)
+    const start = yield* Test.executeWhenReady(
+      HttpClientRequest.post(
+        new URL(
+          "/api/auth/passkey-registration/start",
+          workerOrigin
+        ).toString()
+      ).pipe(
+        HttpClientRequest.setBody(
+          HttpBody.jsonUnsafe({ name: "Integration Test" })
+        )
+      )
+    )
+    expect(start.status).toBe(200)
+
+    const { context } = (yield* start.json) as { context: string }
+    expect(context).toBeTruthy()
+
+    const optionsUrl = new URL(
+      "/api/auth/passkey/generate-register-options",
+      workerOrigin
+    )
+    optionsUrl.searchParams.set("context", context)
+    optionsUrl.searchParams.set("name", "Primary passkey")
+    const options = yield* Test.executeWhenReady(
+      HttpClientRequest.get(optionsUrl.toString())
+    )
+
+    expect(options.status).toBe(200)
+    expect(options.headers["set-cookie"]).toContain(
+      "better-auth.better-auth-passkey"
+    )
+    expect(yield* options.json).toMatchObject({
+      rp: {
+        id: new URL(workerOrigin).hostname,
+        name: "Post Cards"
+      },
+      user: { displayName: "Integration Test" }
+    })
+
+    const prematureCompletion = yield* Test.executeWhenReady(
+      HttpClientRequest.post(
+        new URL(
+          "/api/auth/passkey-registration/complete",
+          workerOrigin
+        ).toString()
+      ).pipe(
+        HttpClientRequest.setBody(
+          HttpBody.jsonUnsafe({ context })
+        )
+      )
+    )
+    expect(prematureCompletion.status).toBe(400)
+
+    if (usersBefore !== undefined) {
+      expect(yield* authUserCount(workerOrigin)).toBe(usersBefore)
+    }
+  })
+)
+
+test.skipIf(stage === "prod")(
+  "round-trips an authenticated image through R2",
+  Effect.gen(function*() {
+    const { workerUrl } = yield* stack
+    const workerOrigin = workerUrl!
+    const cookie = yield* sessionCookie(workerOrigin)
+    const image = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+    ])
+    const upload = yield* HttpClient.execute(
+      HttpClientRequest.post(
+        new URL("/blobs", workerOrigin).toString()
+      ).pipe(
+        HttpClientRequest.setHeader("cookie", cookie),
+        HttpClientRequest.setBody(
+          HttpBody.uint8Array(image, "image/png")
+        )
+      )
     )
 
     expect(upload.status).toBe(201)
@@ -64,19 +253,24 @@ test.skipIf(stage === "prod")(
     expect(location).toMatch(/^\/blobs\//)
 
     const download = yield* HttpClient.get(
-      new URL(location!, workerUrl).toString()
+      new URL(location!, workerOrigin).toString()
     )
     expect(download.status).toBe(200)
     expect(new Uint8Array(yield* download.arrayBuffer)).toEqual(image)
   })
 )
 
-test(
-  "queries both D1-backed RPC collections",
+test.skipIf(stage === "prod")(
+  "queries both authenticated D1-backed RPC collections",
   Effect.gen(function*() {
     const { workerUrl } = yield* stack
+    const workerOrigin = workerUrl!
+    const cookie = yield* sessionCookie(workerOrigin)
     const RpcLive = RpcClient.layerProtocolHttp({
-      url: new URL("/rpc", workerUrl).toString()
+      url: new URL("/rpc", workerOrigin).toString(),
+      transformClient: HttpClient.mapRequest(
+        HttpClientRequest.setHeader("cookie", cookie)
+      )
     }).pipe(
       Layer.provide([
         FetchHttpClient.layer,

@@ -26,7 +26,7 @@ const sentPostcardsUnavailable = (operation: "list" | "send") =>
     message: `Unable to ${operation} sent postcards.`
   })
 
-const PostcardsRpcHandlers = PostcardsRpc.toLayer(
+const PostcardsRpcHandlers = (userId: string) => PostcardsRpc.toLayer(
   Effect.gen(function*() {
     const postcardDesigns = yield* PostcardDesigns
     const sentPostcards = yield* SentPostcards
@@ -45,11 +45,11 @@ const PostcardsRpcHandlers = PostcardsRpc.toLayer(
           )
         ),
       [SENT_POSTCARDS_RPC_METHODS.list]: () =>
-        sentPostcards.all().pipe(
+        sentPostcards.all(userId).pipe(
           Effect.mapError(() => sentPostcardsUnavailable("list"))
         ),
       [SENT_POSTCARDS_RPC_METHODS.send]: (input) =>
-        sentPostcards.send(input).pipe(
+        sentPostcards.send(userId, input).pipe(
           Effect.mapError((error) =>
             isBlobNotFound(error) ? error : sentPostcardsUnavailable("send")
           )
@@ -58,11 +58,12 @@ const PostcardsRpcHandlers = PostcardsRpc.toLayer(
   })
 )
 
-export const PostcardsRpcRouteLive = RpcServer.layerHttp({
-  group: PostcardsRpc,
-  path: "/rpc",
-  protocol: "http"
-}).pipe(
-  Layer.provide(PostcardsRpcHandlers),
-  Layer.provide(RpcSerialization.layerJson)
-)
+export const PostcardsRpcRouteLive = (userId: string) =>
+  RpcServer.layerHttp({
+    group: PostcardsRpc,
+    path: "/rpc",
+    protocol: "http"
+  }).pipe(
+    Layer.provide(PostcardsRpcHandlers(userId)),
+    Layer.provide(RpcSerialization.layerJson)
+  )

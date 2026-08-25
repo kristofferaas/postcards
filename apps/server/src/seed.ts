@@ -15,6 +15,7 @@ import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
 import * as HttpBody from "effect/unstable/http/HttpBody"
 import * as HttpClient from "effect/unstable/http/HttpClient"
+import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest"
 import * as RpcClient from "effect/unstable/rpc/RpcClient"
 import * as RpcSerialization from "effect/unstable/rpc/RpcSerialization"
 
@@ -23,11 +24,16 @@ const apiUrlArgument = process.argv
   .find((argument) => argument !== "--")
 if (apiUrlArgument === undefined) {
   throw new Error(
-    "Usage: pnpm data:seed -- https://your-worker.workers.dev"
+    "Usage: POSTCARDS_SESSION_COOKIE='better-auth.session_token=...' " +
+      "pnpm data:seed -- https://your-worker.workers.dev"
   )
 }
 
 const apiUrl = new URL(apiUrlArgument)
+const sessionCookie = process.env.POSTCARDS_SESSION_COOKIE
+if (sessionCookie === undefined || sessionCookie.trim() === "") {
+  throw new Error("POSTCARDS_SESSION_COOKIE is required to seed the API.")
+}
 
 interface ImageFixture {
   readonly contentType: "image/jpeg" | "image/png"
@@ -61,9 +67,15 @@ class SeedUploadFailed extends Schema.TaggedError<SeedUploadFailed>()(
 
 const upload = Effect.fn("Seed.upload")(function*(fixture: ImageFixture) {
   const data = yield* Effect.tryPromise(() => readFile(fixture.url))
-  const response = yield* HttpClient.post(
-    new URL("/blobs", apiUrl).toString(),
-    { body: HttpBody.uint8Array(data, fixture.contentType) }
+  const response = yield* HttpClient.execute(
+    HttpClientRequest.post(
+      new URL("/blobs", apiUrl).toString()
+    ).pipe(
+      HttpClientRequest.setHeader("cookie", sessionCookie),
+      HttpClientRequest.setBody(
+        HttpBody.uint8Array(data, fixture.contentType)
+      )
+    )
   )
 
   if (response.status < 200 || response.status >= 300) {
@@ -75,7 +87,10 @@ const upload = Effect.fn("Seed.upload")(function*(fixture: ImageFixture) {
 })
 
 const RpcLive = RpcClient.layerProtocolHttp({
-  url: new URL("/rpc", apiUrl).toString()
+  url: new URL("/rpc", apiUrl).toString(),
+  transformClient: HttpClient.mapRequest(
+    HttpClientRequest.setHeader("cookie", sessionCookie)
+  )
 }).pipe(
   Layer.provide([NodeHttpClient.layerUndici, RpcSerialization.layerJson])
 )

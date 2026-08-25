@@ -7,7 +7,10 @@
     "icon": "./assets/images/icon.png",
     "scheme": "post-cards",
     "userInterfaceStyle": "automatic",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.kristofferaas.postcards",
@@ -16,14 +19,14 @@
       }
     },
     "android": {
+      "package": "com.kristofferaas.postcards",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false,
-      "package": "com.kristofferaas.postcards"
+      "predictiveBackGestureEnabled": false
     },
     "plugins": [
       "expo-router",
@@ -48,7 +51,8 @@
           "cameraPermission": "Let Post Cards use your camera to create a postcard.",
           "photosPermission": "Let Post Cards use your photos to create a postcard."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

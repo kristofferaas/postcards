@@ -107,11 +107,12 @@ const RoutesLive = HttpRouter.use((router) =>
   })
 )
 
-export const ApiLive = Layer.mergeAll(
-  RoutesLive,
-  PostcardsRpcRouteLive,
-  HttpRouter.cors({
-    allowedHeaders: ["Content-Type"],
-    allowedMethods: ["GET", "POST", "OPTIONS"]
-  })
-)
+export const ApiLive = (userId: string) =>
+  Layer.mergeAll(
+    RoutesLive,
+    PostcardsRpcRouteLive(userId),
+    HttpRouter.cors({
+      allowedHeaders: ["Content-Type", "Cookie"],
+      allowedMethods: ["GET", "POST", "OPTIONS"]
+    })
+  )

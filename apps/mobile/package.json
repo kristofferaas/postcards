@@ -3,13 +3,18 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@better-auth/expo": "1.6.29",
+    "@better-auth/passkey": "1.6.29",
+    "@better-auth/utils": "0.4.2",
     "@effect/atom-react": "4.0.0-rc.109",
     "@expo/ui": "~57.0.7",
     "@post-cards/contracts": "workspace:*",
     "@shopify/react-native-skia": "2.6.2",
+    "better-auth": "1.6.29",
     "effect": "4.0.0-rc.109",
     "expo": "~57.0.8",
     "expo-asset": "~57.0.7",
+    "expo-better-auth-passkey": "1.4.3",
     "expo-constants": "~57.0.7",
     "expo-dev-client": "~57.0.9",
     "expo-device": "~57.0.1",
@@ -18,7 +23,9 @@
     "expo-image": "~57.0.1",
     "expo-image-picker": "~57.0.6",
     "expo-linking": "~57.0.4",
+    "expo-network": "~57.0.1",
     "expo-router": "~57.0.8",
+    "expo-secure-store": "~57.0.1",
     "expo-splash-screen": "~57.0.5",
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.1",
@@ -30,7 +37,8 @@
     "react-native-reanimated": "4.5.0",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-worklets": "0.10.0"
+    "react-native-worklets": "0.10.0",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
@@ -43,9 +51,11 @@
     "check": "tsc --noEmit",
     "dev": "expo start --dev-client --ios",
     "start": "expo start --ios",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "lint": "expo lint"
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "lint": "expo lint",
+    "test:ios:passkey": "scripts/run-passkey-ui-tests.sh",
+    "test:ios:passkey:configure": "ruby scripts/add-passkey-ui-tests.rb"
   },
   "private": true
 }
