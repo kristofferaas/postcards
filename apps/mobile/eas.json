@@ -18,6 +18,9 @@
     "production": {
       "autoIncrement": true,
       "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://postcards-worker-prod-7pbnruzcynllawqm.kristoffer-b6a.workers.dev"
+      },
       "channel": "production"
     }
   },
