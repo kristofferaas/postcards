@@ -20,23 +20,23 @@ jobs:
     name: Fingerprint
     type: fingerprint
     environment: production
-  get_ios_build:
-    name: Check for existing ios build
-    needs:
-      - fingerprint
+  # Compare against the newest build testers can install. Looking up any build
+  # with the current fingerprint can select an older build after a native revert.
+  get_latest_ios_build:
+    name: Get latest production iOS build
     type: get-build
     params:
       platform: ios
       distribution: store
       channel: production
-      fingerprint_hash: ${{ needs.fingerprint.outputs.ios_fingerprint_hash }}
       profile: production
       wait_for_in_progress: true
   build_ios:
     name: Build iOS
     needs:
-      - get_ios_build
-    if: ${{ !needs.get_ios_build.outputs.build_id }}
+      - fingerprint
+      - get_latest_ios_build
+    if: ${{ !needs.get_latest_ios_build.outputs.build_id || needs.get_latest_ios_build.outputs.fingerprint_hash != needs.fingerprint.outputs.ios_fingerprint_hash }}
     type: build
     params:
       platform: ios
@@ -51,8 +51,9 @@ jobs:
   publish_ios_update:
     name: Publish iOS update
     needs:
-      - get_ios_build
-    if: ${{ needs.get_ios_build.outputs.build_id }}
+      - fingerprint
+      - get_latest_ios_build
+    if: ${{ needs.get_latest_ios_build.outputs.build_id && needs.get_latest_ios_build.outputs.fingerprint_hash == needs.fingerprint.outputs.ios_fingerprint_hash }}
     type: update
     environment: production
     params:
