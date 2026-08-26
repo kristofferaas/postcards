@@ -1,6 +1,6 @@
 import {
   BottomSheet,
-  BottomSheetView,
+  BottomSheetScrollView,
 } from '@expo/ui/community/bottom-sheet';
 import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
@@ -18,6 +18,8 @@ type ProfileSettingsDrawerProps = {
   onSignOut: () => void;
 };
 
+const SNAP_POINTS = ['45%', '70%'];
+
 export function ProfileSettingsDrawer({
   isOpen,
   isSigningOut,
@@ -30,22 +32,24 @@ export function ProfileSettingsDrawer({
 
   return (
     <BottomSheet
-      backgroundStyle={{ backgroundColor: theme.background }}
+      backgroundStyle={{ backgroundColor: theme.backgroundElement }}
       enablePanDownToClose
       index={isOpen ? 0 : -1}
-      onClose={onDismiss}>
-      <BottomSheetView
-        style={[
+      onClose={onDismiss}
+      snapPoints={SNAP_POINTS}>
+      <BottomSheetScrollView
+        contentContainerStyle={[
           styles.content,
           { paddingBottom: Math.max(insets.bottom, Spacing.four) },
-        ]}>
+        ]}
+        showsVerticalScrollIndicator={false}>
         <ThemedText style={styles.title}>Settings</ThemedText>
 
         <View
           accessibilityLabel={`Signed in as ${name}`}
           style={[
             styles.profileCard,
-            { backgroundColor: theme.backgroundElement },
+            { backgroundColor: theme.background },
           ]}>
           <View
             style={[
@@ -88,7 +92,7 @@ export function ProfileSettingsDrawer({
             {isSigningOut ? 'Signing out…' : 'Sign out'}
           </ThemedText>
         </Pressable>
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </BottomSheet>
   );
 }
