@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { apiUrl, type Postcard } from '@/api/postcards';
 import { PostcardListCard } from '@/components/postcard-list-card';
+import { ProfileSettingsDrawer } from '@/components/profile-settings-drawer';
 import { POSTCARD_ASPECT_RATIO } from '@/components/skia-postcard';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -33,10 +34,13 @@ const CREATE_BUTTON_HEIGHT = 56;
 export default function HomeScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const session = authClient.useSession();
   const insets = useSafeAreaInsets();
   const { height: viewportHeight, width: viewportWidth } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
   const scrollY = useSharedValue(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const {
     postcards,
     refresh,
@@ -50,6 +54,17 @@ export default function HomeScreen() {
       refresh();
     }, [refresh]),
   );
+
+  const signOut = useCallback(async () => {
+    if (isSigningOut) return;
+
+    setIsSigningOut(true);
+    try {
+      await authClient.signOut();
+    } finally {
+      setIsSigningOut(false);
+    }
+  }, [isSigningOut]);
 
   const cardWidth = Math.min(
     MAX_CARD_WIDTH,
@@ -120,19 +135,19 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <Pressable
-        accessibilityHint="Signs out of Post Cards"
-        accessibilityLabel="Sign out"
+        accessibilityHint="Opens your profile and settings"
+        accessibilityLabel="Settings"
         accessibilityRole="button"
         hitSlop={8}
-        onPress={() => authClient.signOut()}
+        onPress={() => setIsSettingsOpen(true)}
         style={({ pressed }) => [
-          styles.accountButton,
+          styles.settingsButton,
           { top: insets.top + Spacing.two },
           pressed && styles.pressed,
         ]}>
         <SymbolView
-          name={{ ios: 'person.crop.circle.badge.xmark', android: 'logout' }}
-          size={28}
+          name={{ ios: 'gearshape.fill', android: 'settings' }}
+          size={24}
           tintColor={theme.text}
         />
       </Pressable>
@@ -184,6 +199,14 @@ export default function HomeScreen() {
           <ThemedText style={styles.createButtonText}>Create</ThemedText>
         </Pressable>
       </View>
+
+      <ProfileSettingsDrawer
+        isOpen={isSettingsOpen}
+        isSigningOut={isSigningOut}
+        name={session.data?.user.name?.trim() || 'Post Cards user'}
+        onDismiss={() => setIsSettingsOpen(false)}
+        onSignOut={signOut}
+      />
     </ThemedView>
   );
 }
@@ -192,7 +215,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  accountButton: {
+  settingsButton: {
     alignItems: 'center',
     backgroundColor: 'rgba(127, 127, 127, 0.16)',
     borderCurve: 'continuous',
