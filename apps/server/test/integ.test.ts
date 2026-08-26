@@ -35,10 +35,17 @@ const stack = beforeAll(deploy(Stack))
 
 const sessionCookie = Effect.fn("Integration.sessionCookie")(
   function*(workerUrl: string) {
-    const response = yield* HttpClient.post(
-      new URL("/api/auth/auth-test/session", workerUrl).toString(),
-      { body: HttpBody.jsonUnsafe({ name: "Integration Test" }) }
-    )
+    // Alchemy exposes infrastructure transport failures as unknown.
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
+    const response = yield* Test.executeWhenReady(
+      HttpClientRequest.post(
+        new URL("/api/auth/auth-test/session", workerUrl).toString()
+      ).pipe(
+        HttpClientRequest.setBody(
+          HttpBody.jsonUnsafe({ name: "Integration Test" })
+        )
+      )
+    ).pipe(Effect.orDie)
     expect(response.status).toBe(200)
 
     const cookie = response.headers["set-cookie"]?.split(";")[0]
@@ -49,9 +56,11 @@ const sessionCookie = Effect.fn("Integration.sessionCookie")(
 
 const authUserCount = Effect.fn("Integration.authUserCount")(
   function*(workerUrl: string) {
-    const response = yield* HttpClient.get(
+    // Alchemy exposes infrastructure transport failures as unknown.
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
+    const response = yield* Test.getWhenReady(
       new URL("/api/auth/auth-test/user-count", workerUrl).toString()
-    )
+    ).pipe(Effect.orDie)
     expect(response.status).toBe(200)
     const payload = (yield* response.json) as { count: number }
     return payload.count
@@ -62,9 +71,11 @@ test(
   "serves the health endpoint",
   Effect.gen(function*() {
     const { workerUrl } = yield* stack
-    const response = yield* HttpClient.get(
+    // Alchemy exposes infrastructure transport failures as unknown.
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
+    const response = yield* Test.getWhenReady(
       new URL("/health", workerUrl).toString()
-    )
+    ).pipe(Effect.orDie)
 
     expect(response.status).toBe(200)
     expect(yield* response.json).toEqual({
@@ -78,12 +89,14 @@ test(
   "serves the Apple passkey association",
   Effect.gen(function*() {
     const { workerUrl } = yield* stack
-    const response = yield* HttpClient.get(
+    // Alchemy exposes infrastructure transport failures as unknown.
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
+    const response = yield* Test.getWhenReady(
       new URL(
         "/.well-known/apple-app-site-association",
         workerUrl
       ).toString()
-    )
+    ).pipe(Effect.orDie)
 
     expect(response.status).toBe(200)
     expect(yield* response.json).toEqual({
@@ -203,7 +216,9 @@ test.skipIf(stage === "prod")(
     const image = new Uint8Array([
       0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
     ])
-    const upload = yield* HttpClient.execute(
+    // Alchemy exposes infrastructure transport failures as unknown.
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
+    const upload = yield* Test.executeWhenReady(
       HttpClientRequest.post(
         new URL("/blobs", workerOrigin).toString()
       ).pipe(
@@ -212,15 +227,17 @@ test.skipIf(stage === "prod")(
           HttpBody.uint8Array(image, "image/png")
         )
       )
-    )
+    ).pipe(Effect.orDie)
 
     expect(upload.status).toBe(201)
     const location = upload.headers.location
     expect(location).toMatch(/^\/blobs\//)
 
-    const download = yield* HttpClient.get(
+    // Alchemy exposes infrastructure transport failures as unknown.
+    // @effect-diagnostics-next-line anyUnknownInErrorContext:off
+    const download = yield* Test.getWhenReady(
       new URL(location!, workerOrigin).toString()
-    )
+    ).pipe(Effect.orDie)
     expect(download.status).toBe(200)
     expect(new Uint8Array(yield* download.arrayBuffer)).toEqual(image)
   })

@@ -22,6 +22,21 @@ final class PasskeyFlowTests: XCTestCase {
     ) == .completed
   }
 
+  private func signOut(_ app: XCUIApplication, timeout: TimeInterval) -> Bool {
+    let settings = app.buttons["Settings"]
+    guard waitUntilHittable(settings, timeout: timeout) else {
+      return false
+    }
+    settings.tap()
+
+    let signOut = app.descendants(matching: .any)["Sign out"]
+    guard waitUntilHittable(signOut, timeout: 5) else {
+      return false
+    }
+    signOut.tap()
+    return true
+  }
+
   func testPasskeyRegistrationAndSignInAreOffered() throws {
     let app = XCUIApplication()
     app.launch()
@@ -46,10 +61,7 @@ final class PasskeyFlowTests: XCTestCase {
       closeDeveloperMenu.tap()
     }
 
-    let existingSignOut = app.buttons["Sign out"]
-    if waitUntilHittable(existingSignOut, timeout: 3) {
-      existingSignOut.tap()
-    }
+    _ = signOut(app, timeout: 3)
 
     XCTAssertTrue(
       waitUntilHittable(signUp, timeout: 15),
@@ -86,13 +98,11 @@ final class PasskeyFlowTests: XCTestCase {
     )
     registrationContinue.tap()
 
-    let signOut = app.buttons["Sign out"]
     XCTAssertTrue(
-      waitUntilHittable(signOut, timeout: 60),
+      signOut(app, timeout: 60),
       "Expected registration to establish a session. App hierarchy:\n" +
         app.debugDescription
     )
-    signOut.tap()
 
     let signIn = app.buttons["Continue with passkey"]
     XCTAssertTrue(waitUntilHittable(signIn, timeout: 15))
@@ -108,10 +118,36 @@ final class PasskeyFlowTests: XCTestCase {
     )
     signInContinue.tap()
 
+    let settings = app.buttons["Settings"]
     XCTAssertTrue(
-      waitUntilHittable(app.buttons["Sign out"], timeout: 60),
+      waitUntilHittable(settings, timeout: 60),
       "Expected passkey sign-in to restore the session. App hierarchy:\n" +
         app.debugDescription
+    )
+    settings.tap()
+
+    let signOut = app.descendants(matching: .any)["Sign out"]
+    XCTAssertTrue(waitUntilHittable(signOut, timeout: 5))
+
+    let profile = app.descendants(matching: .any).matching(
+      NSPredicate(format: "label == 'Signed in as A'")
+    ).firstMatch
+    XCTAssertTrue(profile.waitForExistence(timeout: 5))
+
+    app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75))
+      .press(
+        forDuration: 0.1,
+        thenDragTo: app.coordinate(
+          withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)
+        )
+      )
+    let drawerDismissed = XCTNSPredicateExpectation(
+      predicate: NSPredicate(format: "exists == false"),
+      object: signOut
+    )
+    XCTAssertEqual(
+      XCTWaiter.wait(for: [drawerDismissed], timeout: 5),
+      .completed
     )
   }
 }
