@@ -14,43 +14,63 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { signInWithPasskey, signUpWithPasskey } from '@/api/auth';
+import {
+  createAccountWithPasskey,
+  PasskeyAccountCreationAvailableError,
+  signInWithPasskey,
+} from '@/api/auth';
 import { Colors, Spacing } from '@/constants/theme';
 
-type Mode = 'sign-in' | 'sign-up';
+type Step = 'passkey' | 'name';
 
 export function AuthScreen({ onAuthenticated }: { onAuthenticated: () => Promise<void> }) {
-  const [mode, setMode] = useState<Mode>('sign-in');
+  const [step, setStep] = useState<Step>('passkey');
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-  const canSubmit = mode === 'sign-in' || name.trim().length > 0;
+  const canCreateAccount = name.trim().length > 0;
 
-  const submit = async () => {
-    if (!canSubmit || isSubmitting) return;
+  const continueWithPasskey = async () => {
+    if (isSubmitting) return;
 
     setError(null);
     setIsSubmitting(true);
     try {
-      if (mode === 'sign-in') {
-        await signInWithPasskey();
-      } else {
-        await signUpWithPasskey(name);
-      }
+      await signInWithPasskey();
       await onAuthenticated();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Authentication failed.');
+      if (cause instanceof PasskeyAccountCreationAvailableError) {
+        setStep('name');
+      } else {
+        setError(cause instanceof Error ? cause.message : 'Authentication failed.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const selectMode = (nextMode: Mode) => {
-    setMode(nextMode);
+  const createAccount = async () => {
+    if (!canCreateAccount || isSubmitting) return;
+
     setError(null);
+    setIsSubmitting(true);
+    try {
+      await createAccountWithPasskey(name);
+      await onAuthenticated();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Account creation failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const retryPasskey = () => {
+    if (isSubmitting) return;
+    setError(null);
+    setStep('passkey');
   };
 
   return (
@@ -85,51 +105,28 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: () => Promise
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.backgroundElement }]}>
-          <View
-            accessibilityRole="tablist"
-            style={[styles.segment, { backgroundColor: colors.backgroundSelected }]}>
-            {(['sign-in', 'sign-up'] as const).map((item) => {
-              const selected = mode === item;
-              return (
-                <Pressable
-                  accessibilityLabel={item === 'sign-in' ? 'Sign in' : 'Sign up'}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected }}
-                  key={item}
-                  onPress={() => selectMode(item)}
-                  style={[
-                    styles.segmentButton,
-                    selected && { backgroundColor: colors.background },
-                  ]}>
-                  <Text style={[styles.segmentText, { color: colors.text }]}>
-                    {item === 'sign-in' ? 'Sign in' : 'Sign up'}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
           <View style={styles.copy}>
             <Text style={[styles.heading, { color: colors.text }]}>
-              {mode === 'sign-in' ? 'Welcome back' : 'Create your account'}
+              {step === 'passkey' ? 'Continue to Post Cards' : 'Create your account'}
             </Text>
             <Text style={[styles.body, { color: colors.textSecondary }]}>
-              {mode === 'sign-in'
-                ? 'Use Face ID or your device passcode to continue.'
-                : 'Choose a name, then save a passkey to this device.'}
+              {step === 'passkey'
+                ? 'Use a passkey to sign in or create an account.'
+                : 'Enter your name to create an account, or try your passkey again.'}
             </Text>
           </View>
 
-          {mode === 'sign-up' ? (
+          {step === 'name' ? (
             <TextInput
               accessibilityLabel="Your name"
               autoCapitalize="words"
               autoComplete="name"
               autoCorrect={false}
+              autoFocus
               editable={!isSubmitting}
               maxLength={80}
               onChangeText={setName}
-              onSubmitEditing={submit}
+              onSubmitEditing={createAccount}
               placeholder="Your name"
               placeholderTextColor={colors.textSecondary}
               returnKeyType="done"
@@ -156,14 +153,21 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: () => Promise
           ) : null}
 
           <Pressable
-            accessibilityHint="Uses the passkey saved on this device"
-            accessibilityLabel={mode === 'sign-in' ? 'Continue with passkey' : 'Create passkey'}
+            accessibilityHint={
+              step === 'passkey'
+                ? 'Uses a passkey saved on this device'
+                : 'Creates your account after passkey setup is complete'
+            }
+            accessibilityLabel={
+              step === 'passkey' ? 'Continue with passkey' : 'Create account'
+            }
             accessibilityRole="button"
-            disabled={!canSubmit || isSubmitting}
-            onPress={submit}
+            disabled={(step === 'name' && !canCreateAccount) || isSubmitting}
+            onPress={step === 'passkey' ? continueWithPasskey : createAccount}
             style={({ pressed }) => [
               styles.primaryButton,
-              (!canSubmit || isSubmitting) && styles.primaryButtonDisabled,
+              ((step === 'name' && !canCreateAccount) || isSubmitting) &&
+                styles.primaryButtonDisabled,
               pressed && styles.primaryButtonPressed,
             ]}>
             {isSubmitting ? (
@@ -177,12 +181,28 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: () => Promise
               />
             )}
             <Text style={styles.primaryButtonText}>
-              {mode === 'sign-in' ? 'Continue with passkey' : 'Create passkey'}
+              {step === 'passkey' ? 'Continue with passkey' : 'Create account'}
             </Text>
           </Pressable>
 
+          {step === 'name' ? (
+            <Pressable
+              accessibilityLabel="Try passkey again"
+              accessibilityRole="button"
+              disabled={isSubmitting}
+              onPress={retryPasskey}
+              style={({ pressed }) => [
+                styles.retryButton,
+                pressed && styles.primaryButtonPressed,
+              ]}>
+              <Text style={[styles.retryButtonText, { color: colors.text }]}>Try passkey again</Text>
+            </Pressable>
+          ) : null}
+
           <Text style={[styles.footnote, { color: colors.textSecondary }]}>
-            No passwords, recovery phrases, or verification codes.
+            {step === 'passkey'
+              ? 'No passwords, recovery phrases, or verification codes.'
+              : 'Your account is created only after you finish passkey setup.'}
           </Text>
         </View>
       </ScrollView>
@@ -248,21 +268,6 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     width: '100%',
   },
-  segment: {
-    borderCurve: 'continuous',
-    borderRadius: 13,
-    flexDirection: 'row',
-    padding: 3,
-  },
-  segmentButton: {
-    alignItems: 'center',
-    borderCurve: 'continuous',
-    borderRadius: 10,
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 38,
-  },
-  segmentText: { fontSize: 15, fontWeight: '600' },
   copy: { gap: Spacing.one, paddingHorizontal: Spacing.one },
   heading: { fontSize: 25, fontWeight: '700', letterSpacing: -0.5 },
   body: { fontSize: 15, lineHeight: 21 },
@@ -294,5 +299,11 @@ const styles = StyleSheet.create({
   primaryButtonDisabled: { opacity: 0.45 },
   primaryButtonPressed: { opacity: 0.76, transform: [{ scale: 0.985 }] },
   primaryButtonText: { color: '#ffffff', fontSize: 17, fontWeight: '700' },
+  retryButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  retryButtonText: { fontSize: 15, fontWeight: '600' },
   footnote: { fontSize: 12, lineHeight: 17, textAlign: 'center' },
 });

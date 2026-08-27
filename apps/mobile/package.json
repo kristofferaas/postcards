@@ -44,17 +44,21 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.0",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10"
   },
   "scripts": {
     "build": "expo export --platform ios --output-dir dist/ios && expo export --platform android --output-dir dist/android",
     "check": "tsc --noEmit",
     "dev": "expo start --dev-client --ios",
+    "dev:worker": "node scripts/run-with-development-worker.cjs expo start --dev-client --ios",
     "start": "expo start --ios",
     "android": "expo run:android",
-    "ios": "expo run:ios",
+    "ios": "expo prebuild --platform ios && pnpm run test:ios:passkey:configure && expo run:ios",
     "lint": "expo lint",
+    "test": "vitest run",
     "test:ios:passkey": "scripts/run-passkey-ui-tests.sh",
+    "test:ios:passkey:worker": "node scripts/run-with-development-worker.cjs scripts/run-passkey-ui-tests.sh",
     "test:ios:passkey:configure": "ruby scripts/add-passkey-ui-tests.rb"
   },
   "private": true

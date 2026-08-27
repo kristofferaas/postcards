@@ -194,9 +194,7 @@ test(
           workerOrigin
         ).toString()
       ).pipe(
-        HttpClientRequest.setBody(
-          HttpBody.jsonUnsafe({ context })
-        )
+        HttpClientRequest.setBody(HttpBody.jsonUnsafe({}))
       )
     ).pipe(Effect.orDie)
     expect(prematureCompletion.status).toBe(400)
