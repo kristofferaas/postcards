@@ -193,10 +193,6 @@ test(
           "/api/auth/passkey-registration/complete",
           workerOrigin
         ).toString()
-      ).pipe(
-        HttpClientRequest.setBody(
-          HttpBody.jsonUnsafe({ context })
-        )
       )
     ).pipe(Effect.orDie)
     expect(prematureCompletion.status).toBe(400)

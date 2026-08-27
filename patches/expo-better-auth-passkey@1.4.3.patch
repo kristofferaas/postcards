@@ -1,8 +1,388 @@
+diff --git a/android/src/main/java/github/kevcube/betterauthreactnativepasskey/BetterAuthReactNativePasskeyModule.kt b/android/src/main/java/github/kevcube/betterauthreactnativepasskey/BetterAuthReactNativePasskeyModule.kt
+index 6ba0c59b37678327221701a6bb2adf2dc99e019f..1dce55d2650826b671265fbf0b288736856cfee8 100644
+--- a/android/src/main/java/github/kevcube/betterauthreactnativepasskey/BetterAuthReactNativePasskeyModule.kt
++++ b/android/src/main/java/github/kevcube/betterauthreactnativepasskey/BetterAuthReactNativePasskeyModule.kt
+@@ -89,11 +89,11 @@ class BetterAuthReactNativePasskeyModule : Module() {
+             else -> promise.reject("UNEXPECTED_TYPE", "Unexpected credential type", null)
+           }
+         } catch (e: CreateCredentialCancellationException) {
+-          promise.reject("CANCELLED", "User cancelled", e)
++          promise.reject("AUTH_CANCELLED", e.message ?: "Authentication was cancelled", e)
+         } catch (e: CreateCredentialException) {
+-          promise.reject("CREATE_ERROR", e.message ?: "Failed to create passkey", e)
++          promise.reject("PASSKEY_REGISTRATION_FAILED", e.message ?: "Failed to create passkey", e)
+         } catch (e: Exception) {
+-          promise.reject("UNKNOWN_ERROR", e.message ?: "Unknown error", e)
++          promise.reject("PASSKEY_REGISTRATION_FAILED", e.message ?: "Failed to create passkey", e)
+         }
+       }
+     }
+@@ -145,11 +145,11 @@ class BetterAuthReactNativePasskeyModule : Module() {
+             else -> promise.reject("UNEXPECTED_TYPE", "Unexpected credential type: ${credential.type}", null)
+           }
+         } catch (e: GetCredentialCancellationException) {
+-          promise.reject("CANCELLED", "User cancelled", e)
++          promise.reject("AUTH_CANCELLED", e.message ?: "Authentication was cancelled", e)
+         } catch (e: GetCredentialException) {
+-          promise.reject("GET_ERROR", e.message ?: "Failed to get passkey", e)
++          promise.reject("PASSKEY_AUTHENTICATION_FAILED", e.message ?: "Failed to get passkey", e)
+         } catch (e: Exception) {
+-          promise.reject("UNKNOWN_ERROR", e.message ?: "Unknown error", e)
++          promise.reject("PASSKEY_AUTHENTICATION_FAILED", e.message ?: "Failed to get passkey", e)
+         }
+       }
+     }
+diff --git a/build/BetterAuthReactNativePasskeyModule.js.map b/build/BetterAuthReactNativePasskeyModule.js.map
+index 000bc0dc1cf77658266ad133c9483ced757e7966..4575ebf7ca50f2afbc90b159dce5cc8a18f24dfa 100644
+--- a/build/BetterAuthReactNativePasskeyModule.js.map
++++ b/build/BetterAuthReactNativePasskeyModule.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"BetterAuthReactNativePasskeyModule.js","sourceRoot":"","sources":["../src/BetterAuthReactNativePasskeyModule.ts"],"names":[],"mappings":"AAMA,OAAO,EAAE,mBAAmB,EAAE,MAAM,MAAM,CAAC;AAc3C,MAAM,YAAY,GACjB,mBAAmB,CAClB,8BAA8B,CAC9B,CAAC;AAEH,MAAM,kCAAkC,GAAG;IAC1C,eAAe,CAAC,EACf,WAAW,EACX,eAAe,GAIf;QACA,OAAO,YAAY,CAAC,eAAe,CAAC,EAAE,WAAW,EAAE,eAAe,EAAE,CAAC,CAAC;IACvE,CAAC;IAED,mBAAmB,CAAC,EACnB,WAAW,EACX,WAAW,GAIX;QACA,OAAO,YAAY,CAAC,mBAAmB,CAAC,EAAE,WAAW,EAAE,WAAW,EAAE,CAAC,CAAC;IACvE,CAAC;CACD,CAAC;AAEF,eAAe,kCAAkC,CAAC","sourcesContent":["import type {\n\tAuthenticationResponseJSON,\n\tPublicKeyCredentialCreationOptionsJSON,\n\tPublicKeyCredentialRequestOptionsJSON,\n\tRegistrationResponseJSON,\n} from \"@simplewebauthn/types\";\nimport { requireNativeModule } from \"expo\";\n\ninterface NativeBetterAuthReactNativePasskeyModule {\n\tregisterPasskey(params: {\n\t\toptionsJSON: PublicKeyCredentialCreationOptionsJSON;\n\t\tuseAutoRegister?: boolean;\n\t}): Promise<RegistrationResponseJSON>;\n\n\tauthenticatePasskey(params: {\n\t\toptionsJSON: PublicKeyCredentialRequestOptionsJSON;\n\t\tuseAutofill?: boolean;\n\t}): Promise<AuthenticationResponseJSON>;\n}\n\nconst NativeModule =\n\trequireNativeModule<NativeBetterAuthReactNativePasskeyModule>(\n\t\t\"BetterAuthReactNativePasskey\",\n\t);\n\nconst BetterAuthReactNativePasskeyModule = {\n\tregisterPasskey({\n\t\toptionsJSON,\n\t\tuseAutoRegister,\n\t}: {\n\t\toptionsJSON: PublicKeyCredentialCreationOptionsJSON;\n\t\tuseAutoRegister?: boolean;\n\t}) {\n\t\treturn NativeModule.registerPasskey({ optionsJSON, useAutoRegister });\n\t},\n\n\tauthenticatePasskey({\n\t\toptionsJSON,\n\t\tuseAutofill,\n\t}: {\n\t\toptionsJSON: PublicKeyCredentialRequestOptionsJSON;\n\t\tuseAutofill?: boolean;\n\t}) {\n\t\treturn NativeModule.authenticatePasskey({ optionsJSON, useAutofill });\n\t},\n};\n\nexport default BetterAuthReactNativePasskeyModule;\n"]}
+\ No newline at end of file
++{"version":3,"file":"BetterAuthReactNativePasskeyModule.js","sourceRoot":"","sources":["../src/BetterAuthReactNativePasskeyModule.ts"],"names":[],"mappings":"AAMA,OAAO,EAAE,mBAAmB,EAAE,MAAM,MAAM,CAAC;AAc3C,MAAM,YAAY,GACjB,mBAAmB,CAClB,8BAA8B,CAC9B,CAAC;AAEH,MAAM,kCAAkC,GAAG;IAC1C,eAAe,CAAC,EACf,WAAW,EACX,eAAe,GAIf;QACA,OAAO,YAAY,CAAC,eAAe,CAAC,EAAE,WAAW,EAAE,eAAe,EAAE,CAAC,CAAC;IACvE,CAAC;IAED,mBAAmB,CAAC,EACnB,WAAW,EACX,WAAW,GAIX;QACA,OAAO,YAAY,CAAC,mBAAmB,CAAC,EAAE,WAAW,EAAE,WAAW,EAAE,CAAC,CAAC;IACvE,CAAC;CACD,CAAC;AAEF,eAAe,kCAAkC,CAAC"}
+\ No newline at end of file
+diff --git a/build/BetterAuthReactNativePasskeyModule.web.js.map b/build/BetterAuthReactNativePasskeyModule.web.js.map
+index b1a6d995e10c67edf7a7a48ae219ba788e669d48..7b4f718e5ebf7fe2f6eb39b58f2fc34eb33626c0 100644
+--- a/build/BetterAuthReactNativePasskeyModule.web.js.map
++++ b/build/BetterAuthReactNativePasskeyModule.web.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"BetterAuthReactNativePasskeyModule.web.js","sourceRoot":"","sources":["../src/BetterAuthReactNativePasskeyModule.web.ts"],"names":[],"mappings":"AAAA,OAAO,EACL,mBAAmB,EACnB,iBAAiB,GAClB,MAAM,yBAAyB,CAAC;AAOjC,OAAO,EAAE,iBAAiB,EAAE,YAAY,EAAE,MAAM,MAAM,CAAC;AAEvD,MAAM,kCAAmC,SAAQ,YAAY;IAC3D,KAAK,CAAC,aAAa,CACjB,OAA+C,EAC/C,eAAyB;QAEzB,4DAA4D;QAC5D,OAAO,MAAM,iBAAiB,CAAC,EAAE,WAAW,EAAE,OAAO,EAAE,eAAe,EAAE,CAAC,CAAC;IAC5E,CAAC;IAED,KAAK,CAAC,UAAU,CACd,OAA8C,EAC9C,kBAA4B;QAE5B,OAAO,MAAM,mBAAmB,CAAC,EAAE,WAAW,EAAE,OAAO,EAAE,kBAAkB,EAAE,CAAC,CAAC;IACjF,CAAC;CACF;AAED,eAAe,iBAAiB,CAC9B,kCAAkC,EAClC,8BAA8B,CAC/B,CAAC","sourcesContent":["import {\n  startAuthentication,\n  startRegistration,\n} from \"@simplewebauthn/browser\";\nimport type {\n  PublicKeyCredentialCreationOptionsJSON,\n  PublicKeyCredentialRequestOptionsJSON,\n  RegistrationResponseJSON,\n  AuthenticationResponseJSON,\n} from \"@simplewebauthn/types\";\nimport { registerWebModule, NativeModule } from \"expo\";\n\nclass BetterAuthReactNativePasskeyModule extends NativeModule {\n  async createPasskey(\n    options: PublicKeyCredentialCreationOptionsJSON,\n    useAutoRegister?: boolean,\n  ): Promise<RegistrationResponseJSON> {\n    // Delegate to @simplewebauthn/browser to handle conversions\n    return await startRegistration({ optionsJSON: options, useAutoRegister });\n  }\n\n  async getPasskey(\n    options: PublicKeyCredentialRequestOptionsJSON,\n    useBrowserAutofill?: boolean,\n  ): Promise<AuthenticationResponseJSON> {\n    return await startAuthentication({ optionsJSON: options, useBrowserAutofill });\n  }\n}\n\nexport default registerWebModule(\n  BetterAuthReactNativePasskeyModule,\n  \"BetterAuthReactNativePasskey\",\n);\n"]}
+\ No newline at end of file
++{"version":3,"file":"BetterAuthReactNativePasskeyModule.web.js","sourceRoot":"","sources":["../src/BetterAuthReactNativePasskeyModule.web.ts"],"names":[],"mappings":"AAAA,OAAO,EACL,mBAAmB,EACnB,iBAAiB,GAClB,MAAM,yBAAyB,CAAC;AAOjC,OAAO,EAAE,iBAAiB,EAAE,YAAY,EAAE,MAAM,MAAM,CAAC;AAEvD,MAAM,kCAAmC,SAAQ,YAAY;IAC3D,KAAK,CAAC,aAAa,CACjB,OAA+C,EAC/C,eAAyB;QAEzB,4DAA4D;QAC5D,OAAO,MAAM,iBAAiB,CAAC,EAAE,WAAW,EAAE,OAAO,EAAE,eAAe,EAAE,CAAC,CAAC;IAC5E,CAAC;IAED,KAAK,CAAC,UAAU,CACd,OAA8C,EAC9C,kBAA4B;QAE5B,OAAO,MAAM,mBAAmB,CAAC,EAAE,WAAW,EAAE,OAAO,EAAE,kBAAkB,EAAE,CAAC,CAAC;IACjF,CAAC;CACF;AAED,eAAe,iBAAiB,CAC9B,kCAAkC,EAClC,8BAA8B,CAC/B,CAAC"}
+\ No newline at end of file
+diff --git a/build/index.js.map b/build/index.js.map
+index 11cd897693e3ce0bbf8d66c59f58aeb2097128e1..a6c6ec1d18b6b348aad838ece3882862f1ae21ea 100644
+--- a/build/index.js.map
++++ b/build/index.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"index.js","sourceRoot":"","sources":["../src/index.ts"],"names":[],"mappings":"AAAA,iDAAiD;AACjD,OAAO,EAAE,iBAAiB,EAAE,MAAM,UAAU,CAAC","sourcesContent":["// Main export: unified client for web and native\nexport { expoPasskeyClient } from \"./plugin\";\n"]}
+\ No newline at end of file
++{"version":3,"file":"index.js","sourceRoot":"","sources":["../src/index.ts"],"names":[],"mappings":"AAAA,iDAAiD;AACjD,OAAO,EAAE,iBAAiB,EAAE,MAAM,UAAU,CAAC"}
+\ No newline at end of file
+diff --git a/build/plugin.d.ts b/build/plugin.d.ts
+index dab3afd92860f6149c222265e58f2ddb49dfc37e..0953c08a5752b1d10b6faced60f6df9deba211d1 100644
+--- a/build/plugin.d.ts
++++ b/build/plugin.d.ts
+@@ -1,4 +1,5 @@
+ import type { Passkey } from "@better-auth/passkey/client";
++import type { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/types";
+ import type { ClientStore } from "@better-auth/core";
+ import type { BetterFetch } from "@better-fetch/fetch";
+ import type { Session, User } from "better-auth";
+@@ -16,7 +17,7 @@ export declare const expoPasskeyClient: () => {
+         endpoints: {
+             generatePasskeyRegistrationOptions: import("better-call").StrictEndpoint<"/passkey/generate-register-options", {
+                 method: "GET";
+-                use: ((inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
++                use: import("better-call").Middleware<import("better-call").MiddlewareOptions, (inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
+                     session: {
+                         session: Record<string, any> & {
+                             id: string;
+@@ -38,7 +39,7 @@ export declare const expoPasskeyClient: () => {
+                             image?: string | null | undefined;
+                         };
+                     };
+-                }>)[];
++                }>>[];
+                 query: import("zod").ZodOptional<import("zod").ZodObject<{
+                     authenticatorAttachment: import("zod").ZodOptional<import("zod").ZodEnum<{
+                         platform: "platform";
+@@ -51,25 +52,18 @@ export declare const expoPasskeyClient: () => {
+                     openapi: {
+                         operationId: string;
+                         description: string;
++                        parameters: {
++                            name: string;
++                            in: "query";
++                            required: false;
++                            description: string;
++                            schema: {
++                                type: "string";
++                            };
++                        }[];
+                         responses: {
+                             200: {
+                                 description: string;
+-                                parameters: {
+-                                    query: {
+-                                        authenticatorAttachment: {
+-                                            description: string;
+-                                            required: boolean;
+-                                        };
+-                                        name: {
+-                                            description: string;
+-                                            required: boolean;
+-                                        };
+-                                        context: {
+-                                            description: string;
+-                                            required: boolean;
+-                                        };
+-                                    };
+-                                };
+                                 content: {
+                                     "application/json": {
+                                         schema: {
+@@ -168,7 +162,7 @@ export declare const expoPasskeyClient: () => {
+                         };
+                     };
+                 };
+-            }, import("@simplewebauthn/server").PublicKeyCredentialCreationOptionsJSON>;
++            }, PublicKeyCredentialCreationOptionsJSON>;
+             generatePasskeyAuthenticationOptions: import("better-call").StrictEndpoint<"/passkey/generate-authenticate-options", {
+                 method: "GET";
+                 metadata: {
+@@ -262,14 +256,14 @@ export declare const expoPasskeyClient: () => {
+                         };
+                     };
+                 };
+-            }, import("@simplewebauthn/server").PublicKeyCredentialRequestOptionsJSON>;
++            }, PublicKeyCredentialRequestOptionsJSON>;
+             verifyPasskeyRegistration: import("better-call").StrictEndpoint<"/passkey/verify-registration", {
+                 method: "POST";
+                 body: import("zod").ZodObject<{
+                     response: import("zod").ZodAny;
+                     name: import("zod").ZodOptional<import("zod").ZodString>;
+                 }, import("zod/v4/core").$strip>;
+-                use: ((inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
++                use: import("better-call").Middleware<import("better-call").MiddlewareOptions, (inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
+                     session: {
+                         session: Record<string, any> & {
+                             id: string;
+@@ -291,7 +285,7 @@ export declare const expoPasskeyClient: () => {
+                             image?: string | null | undefined;
+                         };
+                     };
+-                }>)[];
++                }>>[];
+                 metadata: {
+                     openapi: {
+                         operationId: string;
+@@ -373,7 +367,7 @@ export declare const expoPasskeyClient: () => {
+             }>;
+             listPasskeys: import("better-call").StrictEndpoint<"/passkey/list-user-passkeys", {
+                 method: "GET";
+-                use: ((inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
++                use: import("better-call").Middleware<import("better-call").MiddlewareOptions, (inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
+                     session: {
+                         session: Record<string, any> & {
+                             id: string;
+@@ -395,7 +389,7 @@ export declare const expoPasskeyClient: () => {
+                             image?: string | null | undefined;
+                         };
+                     };
+-                }>)[];
++                }>>[];
+                 metadata: {
+                     openapi: {
+                         description: string;
+@@ -424,7 +418,7 @@ export declare const expoPasskeyClient: () => {
+                 body: import("zod").ZodObject<{
+                     id: import("zod").ZodString;
+                 }, import("zod/v4/core").$strip>;
+-                use: (((inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
++                use: (import("better-call").Middleware<import("better-call").MiddlewareOptions, (inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
+                     session: {
+                         session: Record<string, any> & {
+                             id: string;
+@@ -446,9 +440,9 @@ export declare const expoPasskeyClient: () => {
+                             image?: string | null | undefined;
+                         };
+                     };
+-                }>) | ((inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
++                }>> | import("better-call").Middleware<import("better-call").MiddlewareOptions, (inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
+                     verifiedResource: {};
+-                }>))[];
++                }>>)[];
+                 metadata: {
+                     openapi: {
+                         description: string;
+@@ -482,7 +476,7 @@ export declare const expoPasskeyClient: () => {
+                     id: import("zod").ZodString;
+                     name: import("zod").ZodString;
+                 }, import("zod/v4/core").$strip>;
+-                use: (((inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
++                use: (import("better-call").Middleware<import("better-call").MiddlewareOptions, (inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
+                     session: {
+                         session: Record<string, any> & {
+                             id: string;
+@@ -504,9 +498,9 @@ export declare const expoPasskeyClient: () => {
+                             image?: string | null | undefined;
+                         };
+                     };
+-                }>) | ((inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
++                }>> | import("better-call").Middleware<import("better-call").MiddlewareOptions, (inputContext: import("better-call").MiddlewareInputContext<import("better-call").MiddlewareOptions>) => Promise<{
+                     verifiedResource: {};
+-                }>))[];
++                }>>)[];
+                 metadata: {
+                     openapi: {
+                         description: string;
+@@ -624,6 +618,14 @@ export declare const expoPasskeyClient: () => {
+                     user: User;
+                 };
+                 error: null;
++            } | {
++                data: null;
++                error: {
++                    code: string;
++                    message: string;
++                    status: number;
++                    statusText: string;
++                };
+             } | {
+                 webauthn: {
+                     response: import("@simplewebauthn/server").AuthenticationResponseJSON;
+@@ -645,14 +647,6 @@ export declare const expoPasskeyClient: () => {
+                     user: User;
+                 };
+                 error: null;
+-            } | {
+-                data: null;
+-                error: {
+-                    code: string;
+-                    message: string;
+-                    status: number;
+-                    statusText: string;
+-                };
+             }>;
+         };
+         passkey: {
+@@ -712,14 +706,6 @@ export declare const expoPasskeyClient: () => {
+                     user: User;
+                 };
+                 error: null;
+-            } | {
+-                data: null;
+-                error: {
+-                    code: string;
+-                    message: string;
+-                    status: number;
+-                    statusText: string;
+-                };
+             }>;
+         };
+         passkey: {
+@@ -727,6 +713,7 @@ export declare const expoPasskeyClient: () => {
+                 fetchOptions?: BetterFetchOption;
+                 name?: string;
+                 authenticatorAttachment?: "platform" | "cross-platform";
++                context?: string;
+                 useAutoRegister?: boolean;
+             }, fetchOpts?: BetterFetchOption) => Promise<{
+                 data: null;
+@@ -740,14 +727,6 @@ export declare const expoPasskeyClient: () => {
+                     passkey: Passkey;
+                 };
+                 error: null;
+-            } | {
+-                data: null;
+-                error: {
+-                    code: string;
+-                    message: string;
+-                    status: number;
+-                    statusText: string;
+-                };
+             }>;
+         };
+         $Infer: {};
+@@ -789,14 +768,6 @@ export declare const getPasskeyActionsNative: ($fetch: BetterFetch, { $listPassk
+                 user: User;
+             };
+             error: null;
+-        } | {
+-            data: null;
+-            error: {
+-                code: string;
+-                message: string;
+-                status: number;
+-                statusText: string;
+-            };
+         }>;
+     };
+     passkey: {
+@@ -804,6 +775,7 @@ export declare const getPasskeyActionsNative: ($fetch: BetterFetch, { $listPassk
+             fetchOptions?: BetterFetchOption;
+             name?: string;
+             authenticatorAttachment?: "platform" | "cross-platform";
++            context?: string;
+             useAutoRegister?: boolean;
+         }, fetchOpts?: BetterFetchOption) => Promise<{
+             data: null;
+@@ -817,14 +789,6 @@ export declare const getPasskeyActionsNative: ($fetch: BetterFetch, { $listPassk
+                 passkey: Passkey;
+             };
+             error: null;
+-        } | {
+-            data: null;
+-            error: {
+-                code: string;
+-                message: string;
+-                status: number;
+-                statusText: string;
+-            };
+         }>;
+     };
+     $Infer: {};
+diff --git a/build/plugin.d.ts.map b/build/plugin.d.ts.map
+index cc9f29c5ff6a5e82eb7da2818695dfdf81297597..234dfa09ebcdb0e0c33bb802d4dfff3677e38e35 100644
+--- a/build/plugin.d.ts.map
++++ b/build/plugin.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"plugin.d.ts","sourceRoot":"","sources":["../src/plugin.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
++{"version":3,"file":"plugin.d.ts","sourceRoot":"","sources":["../src/plugin.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
 diff --git a/build/plugin.js b/build/plugin.js
-index 34ae122f891ef36941102e3bc8c2b4f0c05cf9c1..39ea965994e8687d8a0d18627017bce597da76ea 100644
+index 34ae122f891ef36941102e3bc8c2b4f0c05cf9c1..87dd46e90850686c6396d44c3bd1784f71ae50ed 100644
 --- a/build/plugin.js
 +++ b/build/plugin.js
-@@ -75,6 +75,7 @@ export const getPasskeyActionsNative = ($fetch, { $listPasskeys, $store, }) => {
+@@ -2,6 +2,24 @@ import { getPasskeyActions, passkeyClient } from "@better-auth/passkey/client";
+ import { atom } from "nanostores";
+ import { Platform } from "react-native";
+ import PasskeyModule from "./BetterAuthReactNativePasskeyModule";
++const passkeyErrorResponse = (error, fallbackCode, fallbackMessage) => {
++    const nativeError = typeof error === "object" && error !== null
++        ? error
++        : null;
++    const code = typeof nativeError?.code === "string" ? nativeError.code : fallbackCode;
++    const cancelled = code === "AUTH_CANCELLED";
++    return {
++        data: null,
++        error: {
++            code,
++            message: typeof nativeError?.message === "string"
++                ? nativeError.message
++                : fallbackMessage,
++            status: cancelled ? 400 : 500,
++            statusText: cancelled ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR",
++        },
++    };
++};
+ /**
+  * Expo/React Native passkey client that extends better-auth's `passkeyClient`
+  * and overrides only the device WebAuthn calls to use React Native modules.
+@@ -52,19 +70,7 @@ export const getPasskeyActionsNative = ($fetch, { $listPasskeys, $store, }) => {
+         }
+         catch (e) {
+             console.error("Passkey sign-in error:", e);
+-            let errorMessage = "auth cancelled";
+-            if (e instanceof Error) {
+-                errorMessage = e.message;
+-            }
+-            return {
+-                data: null,
+-                error: {
+-                    code: "AUTH_CANCELLED",
+-                    message: errorMessage,
+-                    status: 400,
+-                    statusText: "BAD_REQUEST",
+-                },
+-            };
++            return passkeyErrorResponse(e, "PASSKEY_AUTHENTICATION_FAILED", "Passkey authentication could not be completed.");
+         }
+     };
+     const registerPasskey = async (opts, fetchOpts) => {
+@@ -75,6 +81,7 @@ export const getPasskeyActionsNative = ($fetch, { $listPasskeys, $store, }) => {
                      authenticatorAttachment: opts.authenticatorAttachment,
                  }),
                  ...(opts?.name && { name: opts.name }),
@@ -10,11 +390,240 @@ index 34ae122f891ef36941102e3bc8c2b4f0c05cf9c1..39ea965994e8687d8a0d18627017bce5
              },
          });
          if (!optionsRes.data)
+@@ -100,19 +107,7 @@ export const getPasskeyActionsNative = ($fetch, { $listPasskeys, $store, }) => {
+         }
+         catch (e) {
+             console.error("Passkey registration error:", e);
+-            let errorMessage = "auth cancelled";
+-            if (e instanceof Error) {
+-                errorMessage = e.message;
+-            }
+-            return {
+-                data: null,
+-                error: {
+-                    code: "AUTH_CANCELLED",
+-                    message: errorMessage,
+-                    status: 400,
+-                    statusText: "BAD_REQUEST",
+-                },
+-            };
++            return passkeyErrorResponse(e, "PASSKEY_REGISTRATION_FAILED", "Passkey registration could not be completed.");
+         }
+     };
+     return {
+diff --git a/build/plugin.js.map b/build/plugin.js.map
+index 1ea385549ab908e2c66b40efd46c51fbd341e3c7..51670f28f6d064468e0df63d8442ca3a4bb2623c 100644
+--- a/build/plugin.js.map
++++ b/build/plugin.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"plugin.js","sourceRoot":"","sources":["../src/plugin.ts"],"names":[],"mappings":"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","sourcesContent":["import { getPasskeyActions, passkeyClient } from \"@better-auth/passkey/client\";\nimport type { Passkey } from \"@better-auth/passkey/client\";\nimport type {\n  PublicKeyCredentialCreationOptionsJSON,\n  PublicKeyCredentialRequestOptionsJSON,\n} from \"@simplewebauthn/types\";\nimport type { BetterAuthClientPlugin, ClientStore } from \"@better-auth/core\";\nimport type { BetterFetch } from \"@better-fetch/fetch\";\nimport type { Session, User } from \"better-auth\";\nimport type { BetterFetchOption } from \"better-auth/client\";\nimport { atom } from \"nanostores\";\nimport { Platform } from \"react-native\";\n\nimport PasskeyModule from \"./BetterAuthReactNativePasskeyModule\";\n\n/**\n * Expo/React Native passkey client that extends better-auth's `passkeyClient`\n * and overrides only the device WebAuthn calls to use React Native modules.\n */\n\nexport const expoPasskeyClient = () => {\n  // Get the base passkey client\n  const baseClient = passkeyClient();\n  const $listPasskeys = atom<number>(0);\n\n  return {\n    id: baseClient.id,\n    $InferServerPlugin: baseClient.$InferServerPlugin,\n    getActions: ($fetch: BetterFetch, $store: ClientStore, _options) => {\n      if (Platform.OS === \"web\") {\n        return getPasskeyActions($fetch, { $listPasskeys, $store });\n      } else {\n        return getPasskeyActionsNative($fetch, { $listPasskeys, $store });\n      }\n    },\n    getAtoms: baseClient.getAtoms,\n    pathMethods: baseClient.pathMethods,\n    atomListeners: baseClient.atomListeners,\n  } satisfies BetterAuthClientPlugin;\n};\n\nexport const getPasskeyActionsNative = (\n  $fetch: BetterFetch,\n  {\n    $listPasskeys,\n    $store,\n  }: {\n    $listPasskeys: ReturnType<typeof atom<number>>;\n    $store: ClientStore;\n  },\n) => {\n  const signInPasskey = async (\n    opts?: {\n      autoFill?: boolean;\n      fetchOptions?: BetterFetchOption;\n    },\n    options?: BetterFetchOption,\n  ) => {\n    const response = await $fetch<PublicKeyCredentialRequestOptionsJSON>(\n      \"/passkey/generate-authenticate-options\",\n      {\n        method: \"GET\",\n      },\n    );\n    if (!response.data) return response;\n\n    try {\n      const assertion = await PasskeyModule.authenticatePasskey({\n        optionsJSON: response.data,\n        useAutofill: opts?.autoFill,\n      });\n      const verified = await $fetch<{\n        session: Session;\n        user: User;\n      }>(\"/passkey/verify-authentication\", {\n        body: { response: assertion },\n        ...opts?.fetchOptions,\n        ...options,\n        method: \"POST\",\n      });\n\n      if (verified.data) {\n        $listPasskeys.set(Math.random());\n        $store.notify(\"$sessionSignal\");\n      }\n      return verified;\n    } catch (e) {\n      console.error(\"Passkey sign-in error:\", e);\n      let errorMessage = \"auth cancelled\";\n      if (e instanceof Error) {\n        errorMessage = e.message;\n      }\n      return {\n        data: null,\n        error: {\n          code: \"AUTH_CANCELLED\",\n          message: errorMessage,\n          status: 400,\n          statusText: \"BAD_REQUEST\",\n        },\n      };\n    }\n  };\n\n  const registerPasskey = async (\n    opts?: {\n      fetchOptions?: BetterFetchOption;\n      name?: string;\n      authenticatorAttachment?: \"platform\" | \"cross-platform\";\n      useAutoRegister?: boolean;\n    },\n    fetchOpts?: BetterFetchOption,\n  ) => {\n    const optionsRes = await $fetch<PublicKeyCredentialCreationOptionsJSON>(\n      \"/passkey/generate-register-options\",\n      {\n        method: \"GET\",\n        query: {\n          ...(opts?.authenticatorAttachment && {\n            authenticatorAttachment: opts.authenticatorAttachment,\n          }),\n          ...(opts?.name && { name: opts.name }),\n        },\n      },\n    );\n\n    if (!optionsRes.data) return optionsRes;\n\n    try {\n      const attestation = await PasskeyModule.registerPasskey({\n        optionsJSON: optionsRes.data,\n        useAutoRegister: opts?.useAutoRegister,\n      });\n\n      const verified = await $fetch<{ passkey: Passkey }>(\n        \"/passkey/verify-registration\",\n        {\n          ...opts?.fetchOptions,\n          ...fetchOpts,\n          body: {\n            response: attestation,\n            name: opts?.name,\n          },\n          method: \"POST\",\n        },\n      );\n      if (!verified.data) return verified;\n      $listPasskeys.set(Math.random());\n      return verified;\n    } catch (e) {\n      console.error(\"Passkey registration error:\", e);\n      let errorMessage = \"auth cancelled\";\n      if (e instanceof Error) {\n        errorMessage = e.message;\n      }\n      return {\n        data: null,\n        error: {\n          code: \"AUTH_CANCELLED\",\n          message: errorMessage,\n          status: 400,\n          statusText: \"BAD_REQUEST\",\n        },\n      };\n    }\n  };\n\n  return {\n    signIn: {\n      passkey: signInPasskey,\n    },\n    passkey: {\n      addPasskey: registerPasskey,\n    },\n    $Infer: {},\n  };\n};\n"]}
+\ No newline at end of file
++{"version":3,"file":"plugin.js","sourceRoot":"","sources":["../src/plugin.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
+diff --git a/ios/BetterAuthReactNativePasskeyModule.swift b/ios/BetterAuthReactNativePasskeyModule.swift
+index 765297f0a987218ef559354d2e1e951cb223abd8..fa0f8e68b470b4d29ec19016be94486dff767a23 100644
+--- a/ios/BetterAuthReactNativePasskeyModule.swift
++++ b/ios/BetterAuthReactNativePasskeyModule.swift
+@@ -79,7 +79,7 @@ extension BetterAuthReactNativePasskeyModule {
+       promise.resolve(result.toDictionary())
+     }
+     delegate.onError = { error in
+-      promise.reject("ERR_CREATE_PASSKEY", error.localizedDescription)
++      promise.reject(PasskeyException(operationCode: "PASSKEY_REGISTRATION_FAILED", error: error))
+     }
+ 
+     let controller = ASAuthorizationController(authorizationRequests: [request])
+@@ -144,7 +144,7 @@ extension BetterAuthReactNativePasskeyModule {
+       promise.resolve(result.toDictionary())
+     }
+     delegate.onError = { error in
+-      promise.reject("ERR_GET_PASSKEY", error.localizedDescription)
++      promise.reject(PasskeyException(operationCode: "PASSKEY_AUTHENTICATION_FAILED", error: error))
+     }
+ 
+     let controller = ASAuthorizationController(authorizationRequests: [request])
+@@ -167,6 +167,34 @@ extension BetterAuthReactNativePasskeyModule {
+   }
+ }
+ 
++private final class PasskeyException: Exception, @unchecked Sendable {
++  private let passkeyCode: String
++  private let passkeyReason: String
++
++  init(operationCode: String, error: Error) {
++    if let authorizationError = error as? ASAuthorizationError,
++       authorizationError.code == .canceled {
++      passkeyCode = "AUTH_CANCELLED"
++    } else {
++      passkeyCode = operationCode
++    }
++    passkeyReason = error.localizedDescription
++    super.init()
++  }
++
++  override var code: String {
++    passkeyCode
++  }
++
++  override var reason: String {
++    passkeyReason
++  }
++
++  override var debugDescription: String {
++    passkeyReason
++  }
++}
++
+ private class PasskeyDelegate: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+   var onRegistration: ((ASAuthorizationPlatformPublicKeyCredentialRegistration) -> Void)?
+   var onAssertion: ((ASAuthorizationPlatformPublicKeyCredentialAssertion) -> Void)?
+diff --git a/src/__tests__/plugin.test.ts b/src/__tests__/plugin.test.ts
+index 1dcf6eed8a30275aa7632224f657bbf141254f89..1e16c49748ef252875a11dcdbb0f5be2ed3d976e 100644
+--- a/src/__tests__/plugin.test.ts
++++ b/src/__tests__/plugin.test.ts
+@@ -221,10 +221,10 @@ describe("getPasskeyActionsNative", () => {
+       expect(result).toEqual(errorResponse);
+     });
+ 
+-    it("should handle native module authentication error", async () => {
++    it("should handle native authentication cancellation", async () => {
+       mockFetch.mockResolvedValueOnce({ data: mockAuthOptions, error: null });
+       mockAuthenticatePasskey.mockRejectedValueOnce(
+-        new Error("User cancelled")
++        Object.assign(new Error("User cancelled"), { code: "AUTH_CANCELLED" })
+       );
+ 
+       const actions = getPasskeyActionsNative(mockFetch, {
+@@ -246,6 +246,32 @@ describe("getPasskeyActionsNative", () => {
+       expect($store.notify).not.toHaveBeenCalled();
+     });
+ 
++    it("should preserve a native authentication failure", async () => {
++      mockFetch.mockResolvedValueOnce({ data: mockAuthOptions, error: null });
++      mockAuthenticatePasskey.mockRejectedValueOnce(
++        Object.assign(new Error("No matching passkey"), {
++          code: "PASSKEY_AUTHENTICATION_FAILED",
++        })
++      );
++
++      const actions = getPasskeyActionsNative(mockFetch, {
++        $listPasskeys,
++        $store: $store as any,
++      });
++
++      const result = await actions.signIn.passkey();
++
++      expect(result).toEqual({
++        data: null,
++        error: {
++          code: "PASSKEY_AUTHENTICATION_FAILED",
++          message: "No matching passkey",
++          status: 500,
++          statusText: "INTERNAL_SERVER_ERROR",
++        },
++      });
++    });
++
+     it("should handle non-Error exceptions", async () => {
+       mockFetch.mockResolvedValueOnce({ data: mockAuthOptions, error: null });
+       mockAuthenticatePasskey.mockRejectedValueOnce("string error");
+@@ -260,10 +286,10 @@ describe("getPasskeyActionsNative", () => {
+       expect(result).toEqual({
+         data: null,
+         error: {
+-          code: "AUTH_CANCELLED",
+-          message: "auth cancelled",
+-          status: 400,
+-          statusText: "BAD_REQUEST",
++          code: "PASSKEY_AUTHENTICATION_FAILED",
++          message: "Passkey authentication could not be completed.",
++          status: 500,
++          statusText: "INTERNAL_SERVER_ERROR",
+         },
+       });
+     });
+@@ -448,10 +474,10 @@ describe("getPasskeyActionsNative", () => {
+       expect(result).toEqual({
+         data: null,
+         error: {
+-          code: "AUTH_CANCELLED",
++          code: "PASSKEY_REGISTRATION_FAILED",
+           message: "Biometric not available",
+-          status: 400,
+-          statusText: "BAD_REQUEST",
++          status: 500,
++          statusText: "INTERNAL_SERVER_ERROR",
+         },
+       });
+     });
 diff --git a/src/plugin.ts b/src/plugin.ts
-index 433e4523aa5bffdb7e67f1e50ff87ebaf89f2209..4f71044d2e5d225ea80f2b95b8fefa1bc5a0bf1f 100644
+index 433e4523aa5bffdb7e67f1e50ff87ebaf89f2209..a52d6757d04659af4cb8d1a92ca367dc2062f993 100644
 --- a/src/plugin.ts
 +++ b/src/plugin.ts
-@@ -107,6 +107,7 @@ export const getPasskeyActionsNative = (
+@@ -13,6 +13,37 @@ import { Platform } from "react-native";
+ 
+ import PasskeyModule from "./BetterAuthReactNativePasskeyModule";
+ 
++type PasskeyErrorCode =
++  | "PASSKEY_AUTHENTICATION_FAILED"
++  | "PASSKEY_REGISTRATION_FAILED";
++
++const passkeyErrorResponse = (
++  error: unknown,
++  fallbackCode: PasskeyErrorCode,
++  fallbackMessage: string,
++) => {
++  const nativeError =
++    typeof error === "object" && error !== null
++      ? (error as { code?: unknown; message?: unknown })
++      : null;
++  const code =
++    typeof nativeError?.code === "string" ? nativeError.code : fallbackCode;
++  const cancelled = code === "AUTH_CANCELLED";
++
++  return {
++    data: null,
++    error: {
++      code,
++      message:
++        typeof nativeError?.message === "string"
++          ? nativeError.message
++          : fallbackMessage,
++      status: cancelled ? 400 : 500,
++      statusText: cancelled ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR",
++    },
++  };
++};
++
+ /**
+  * Expo/React Native passkey client that extends better-auth's `passkeyClient`
+  * and overrides only the device WebAuthn calls to use React Native modules.
+@@ -86,19 +117,11 @@ export const getPasskeyActionsNative = (
+       return verified;
+     } catch (e) {
+       console.error("Passkey sign-in error:", e);
+-      let errorMessage = "auth cancelled";
+-      if (e instanceof Error) {
+-        errorMessage = e.message;
+-      }
+-      return {
+-        data: null,
+-        error: {
+-          code: "AUTH_CANCELLED",
+-          message: errorMessage,
+-          status: 400,
+-          statusText: "BAD_REQUEST",
+-        },
+-      };
++      return passkeyErrorResponse(
++        e,
++        "PASSKEY_AUTHENTICATION_FAILED",
++        "Passkey authentication could not be completed.",
++      );
+     }
+   };
+ 
+@@ -107,6 +130,7 @@ export const getPasskeyActionsNative = (
        fetchOptions?: BetterFetchOption;
        name?: string;
        authenticatorAttachment?: "platform" | "cross-platform";
@@ -22,7 +631,7 @@ index 433e4523aa5bffdb7e67f1e50ff87ebaf89f2209..4f71044d2e5d225ea80f2b95b8fefa1b
        useAutoRegister?: boolean;
      },
      fetchOpts?: BetterFetchOption,
-@@ -120,6 +121,7 @@ export const getPasskeyActionsNative = (
+@@ -120,6 +144,7 @@ export const getPasskeyActionsNative = (
              authenticatorAttachment: opts.authenticatorAttachment,
            }),
            ...(opts?.name && { name: opts.name }),
@@ -30,3 +639,28 @@ index 433e4523aa5bffdb7e67f1e50ff87ebaf89f2209..4f71044d2e5d225ea80f2b95b8fefa1b
          },
        },
      );
+@@ -149,19 +174,11 @@ export const getPasskeyActionsNative = (
+       return verified;
+     } catch (e) {
+       console.error("Passkey registration error:", e);
+-      let errorMessage = "auth cancelled";
+-      if (e instanceof Error) {
+-        errorMessage = e.message;
+-      }
+-      return {
+-        data: null,
+-        error: {
+-          code: "AUTH_CANCELLED",
+-          message: errorMessage,
+-          status: 400,
+-          statusText: "BAD_REQUEST",
+-        },
+-      };
++      return passkeyErrorResponse(
++        e,
++        "PASSKEY_REGISTRATION_FAILED",
++        "Passkey registration could not be completed.",
++      );
+     }
+   };
+ 

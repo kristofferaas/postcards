@@ -37,12 +37,12 @@ final class PasskeyFlowTests: XCTestCase {
     return true
   }
 
-  func testPasskeyRegistrationAndSignInAreOffered() throws {
+  func testPasskeyContinuesToRegistrationOrSignIn() throws {
     let app = XCUIApplication()
     app.launch()
 
-    let signUp = app.descendants(matching: .any)["Sign up"]
-    if !signUp.waitForExistence(timeout: 3) {
+    let continueWithPasskey = app.buttons["Continue with passkey"]
+    if !continueWithPasskey.waitForExistence(timeout: 3) {
       let developmentServer = app.buttons.matching(
         NSPredicate(format: "label BEGINSWITH 'Post Cards, http'")
       ).firstMatch
@@ -52,32 +52,45 @@ final class PasskeyFlowTests: XCTestCase {
     }
 
     let developerMenuContinue = app.buttons["Continue"]
-    if waitUntilHittable(developerMenuContinue, timeout: 3) {
+    if waitUntilHittable(developerMenuContinue, timeout: 10) {
       developerMenuContinue.tap()
     }
 
     let closeDeveloperMenu = app.buttons["Close"]
-    if waitUntilHittable(closeDeveloperMenu, timeout: 3) {
+    if waitUntilHittable(closeDeveloperMenu, timeout: 10) {
       closeDeveloperMenu.tap()
     }
 
     _ = signOut(app, timeout: 3)
 
     XCTAssertTrue(
-      waitUntilHittable(signUp, timeout: 15),
+      waitUntilHittable(continueWithPasskey, timeout: 15),
       "Expected the auth screen. App hierarchy:\n\(app.debugDescription)"
     )
-    signUp.tap()
-
-    let name = app.textFields["Your name"]
-    XCTAssertTrue(waitUntilHittable(name, timeout: 5))
-    name.tap()
-    name.typeText("A")
-    let createPasskey = app.buttons["Create passkey"]
-    XCTAssertTrue(waitUntilHittable(createPasskey, timeout: 5))
-    createPasskey.tap()
+    XCTAssertFalse(app.textFields["Your name"].exists)
+    continueWithPasskey.tap()
 
     let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+    let signInCancel = springboard.descendants(matching: .any)[
+      "ASAuthorizationControllerCancelButton"
+    ]
+    if waitUntilHittable(signInCancel, timeout: 5) {
+      signInCancel.tap()
+    }
+
+    let name = app.textFields["Your name"]
+    XCTAssertTrue(
+      waitUntilHittable(name, timeout: 15),
+      "Expected account creation to be offered after passkey dismissal. App hierarchy:\n" +
+        app.debugDescription
+    )
+    XCTAssertTrue(app.buttons["Try passkey again"].exists)
+    name.tap()
+    name.typeText("A")
+    let createAccount = app.buttons["Create account"]
+    XCTAssertTrue(waitUntilHittable(createAccount, timeout: 5))
+    createAccount.tap()
+
     let passkeySheet = springboard.staticTexts.matching(
       NSPredicate(format: "label CONTAINS[c] 'passkey'")
     ).firstMatch

@@ -28,14 +28,30 @@ export const authClient = createAuthClient({
 const errorMessage = (error: { message?: string } | null) =>
   error?.message ?? 'Authentication could not be completed.';
 
+const accountCreationAvailableErrorCodes = new Set([
+  'AUTH_CANCELLED',
+  'PASSKEY_NOT_FOUND',
+]);
+
+export class PasskeyAccountCreationAvailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PasskeyAccountCreationAvailableError';
+  }
+}
+
 export const signInWithPasskey = async () => {
   const result = await authClient.signIn.passkey();
   if (result.error) {
+    const code = 'code' in result.error ? result.error.code : undefined;
+    if (accountCreationAvailableErrorCodes.has(code ?? '')) {
+      throw new PasskeyAccountCreationAvailableError(errorMessage(result.error));
+    }
     throw new Error(errorMessage(result.error));
   }
 };
 
-export const signUpWithPasskey = async (name: string) => {
+export const createAccountWithPasskey = async (name: string) => {
   const start = await authClient.$fetch<{ context: string }>(
     '/passkey-registration/start',
     {
@@ -59,10 +75,7 @@ export const signUpWithPasskey = async (name: string) => {
 
   const completion = await authClient.$fetch<{ userId: string }>(
     '/passkey-registration/complete',
-    {
-      method: 'POST',
-      body: { context: start.data.context },
-    },
+    { method: 'POST' },
   );
 
   if (completion.error || !completion.data) {

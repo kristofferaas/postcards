@@ -41,10 +41,20 @@ The mobile app uses `http://localhost:3000` on the iOS simulator and
 `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to use a deployed Worker or a
 physical device.
 
-Passkeys use the API hostname as their relying-party ID. Set
-`EXPO_PUBLIC_PASSKEY_RP_ID` only when the relying-party ID differs from that
-hostname. Local iOS builds use Apple's `localhost` associated-domain developer
-mode.
+Passkeys use the API hostname as their relying-party ID. Development clients
+are entitled for both Apple's `localhost` developer mode and the stable test
+Worker, so switching between those APIs does not require another native build.
+Use `pnpm --filter @post-cards/mobile dev:worker` to start Metro against the
+test Worker. Preview and production builds remain limited to their configured
+API hostname.
+
+After changing the entitlement configuration, rebuild the development client
+once. The iOS command runs prebuild, restores the passkey UI-test target, and
+installs the app:
+
+```sh
+pnpm --filter @post-cards/mobile ios
+```
 
 ## Cloudflare resources
 
@@ -97,8 +107,6 @@ returns `8ZJAHCVAGF.com.kristofferaas.postcards` from the AASA endpoint.
 The EAS `production` environment also needs:
 
 - `EXPO_PUBLIC_API_URL`: the production Worker URL.
-- `EXPO_PUBLIC_PASSKEY_RP_ID`: optional when it is the same as the API
-  hostname.
 
 Verify the deployed response with:
 
@@ -127,12 +135,11 @@ after `expo prebuild`:
 pnpm --filter @post-cards/mobile test:ios:passkey:configure
 ```
 
-Start Expo with an HTTPS Worker whose hostname matches the generated app's
-web-credentials entitlement, then run:
+Start Expo against the stable test Worker, then run:
 
 ```sh
-EXPO_PUBLIC_API_URL=https://your-worker.workers.dev \
-  pnpm --filter @post-cards/mobile test:ios:passkey
+pnpm --filter @post-cards/mobile dev:worker
+pnpm --filter @post-cards/mobile test:ios:passkey:worker
 ```
 
 Set `IOS_SIMULATOR_ID` to choose a simulator; otherwise the command uses the

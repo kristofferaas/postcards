@@ -11,6 +11,7 @@ import * as z from "zod"
 
 const REGISTRATION_INTENT_PREFIX = "passkey-registration:"
 const REGISTRATION_COMPLETION_PREFIX = "passkey-registration-complete:"
+const REGISTRATION_COMPLETION_COOKIE = "passkey_registration_completion"
 const REGISTRATION_INTENT_TTL_MS = 5 * 60 * 1_000
 const REGISTRATION_COMPLETION_TTL_MS = 60 * 1_000
 const IOS_BUNDLE_IDENTIFIER = "com.kristofferaas.postcards"
@@ -44,10 +45,6 @@ const startRegistrationBody = z.object({
   name: z.string().trim().min(1).max(80)
 })
 
-const completeRegistrationBody = z.object({
-  context: z.string().uuid()
-})
-
 const passkeyRegistration = () => ({
   id: "passkey-registration",
   endpoints: {
@@ -75,14 +72,27 @@ const passkeyRegistration = () => ({
     ),
     completePasskeyRegistration: createAuthEndpoint(
       "/passkey-registration/complete",
-      {
-        method: "POST",
-        body: completeRegistrationBody
-      },
+      { method: "POST" },
       async (ctx) => {
+        const completionCookie = ctx.context.createAuthCookie(
+          REGISTRATION_COMPLETION_COOKIE,
+          { maxAge: REGISTRATION_COMPLETION_TTL_MS / 1_000 }
+        )
+        const completionToken = await ctx.getSignedCookie(
+          completionCookie.name,
+          ctx.context.secret
+        )
+
+        if (!completionToken) {
+          throw APIError.from("BAD_REQUEST", {
+            code: "REGISTRATION_COMPLETION_INVALID",
+            message: "The passkey registration was not verified or has expired."
+          })
+        }
+
         const completion =
           await ctx.context.internalAdapter.consumeVerificationValue(
-            `${REGISTRATION_COMPLETION_PREFIX}${ctx.body.context}`
+            `${REGISTRATION_COMPLETION_PREFIX}${completionToken}`
           )
 
         if (!completion) {
@@ -241,13 +251,25 @@ export const authOptions = {
             })
           }
 
+          const completionToken = await makeRandomUuid()
+          const completionCookie = ctx.context.createAuthCookie(
+            REGISTRATION_COMPLETION_COOKIE,
+            { maxAge: REGISTRATION_COMPLETION_TTL_MS / 1_000 }
+          )
+
           await ctx.context.internalAdapter.createVerificationValue({
-            identifier: `${REGISTRATION_COMPLETION_PREFIX}${context}`,
+            identifier: `${REGISTRATION_COMPLETION_PREFIX}${completionToken}`,
             value: databaseUser.id,
             expiresAt: await expirationDate(
               REGISTRATION_COMPLETION_TTL_MS
             )
           })
+          await ctx.setSignedCookie(
+            completionCookie.name,
+            completionToken,
+            ctx.context.secret,
+            completionCookie.attributes
+          )
 
           return { userId: databaseUser.id }
         }
