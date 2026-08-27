@@ -57,5 +57,5 @@ jobs:
     type: update
     environment: production
     params:
-      branch: production
+      channel: production
       platform: ios
