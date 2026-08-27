@@ -75,7 +75,7 @@ export const createAccountWithPasskey = async (name: string) => {
 
   const completion = await authClient.$fetch<{ userId: string }>(
     '/passkey-registration/complete',
-    { method: 'POST' },
+    { method: 'POST', body: {} },
   );
 
   if (completion.error || !completion.data) {
