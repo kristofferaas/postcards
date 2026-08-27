@@ -1,4 +1,4 @@
-import passkeyEnvironments from './passkey-environments.json';
+import passkeyEnvironments from './passkey-environments.json' with { type: 'json' };
 
 export const developmentWorkerApiUrl =
   passkeyEnvironments.developmentWorkerApiUrl;
