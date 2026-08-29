@@ -16,5 +16,8 @@ jobs:
   submit_ios_build:
     name: Submit iOS Build
     type: submit
+    env:
+      EXPO_DEBUG: "1"
     params:
       build_id: ${{ inputs.build_id }}
+      profile: production
