@@ -18,6 +18,7 @@ jobs:
     type: submit
     env:
       EXPO_DEBUG: "1"
+      POSTCARDS_NATIVE_BUILD_PROFILE: production
     params:
       build_id: ${{ inputs.build_id }}
       profile: production
